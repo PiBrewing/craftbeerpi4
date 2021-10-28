@@ -22,6 +22,8 @@ import yaml
 from ..api.step import StepMove, StepResult, StepState
 import re
 import base64
+import magic
+import codecs
 
 class UploadController:
 
@@ -107,19 +109,22 @@ class UploadController:
         filename = fileData.filename
         recipe_file = fileData.file
         content_type = fileData.content_type
+        blob = recipe_file.read()
+        m = magic.Magic(mime_encoding=True)
+        encoding = m.from_buffer(blob)
 
         if content_type == 'text/xml':
             try:
-                beer_xml = recipe_file.read().decode()
+                beer_xml = blob.decode(encoding)
                 if recipe_file and self.allowed_file(filename, 'xml'):
                     self.path = os.path.join(".", 'config', "upload", "beer.xml")
     
-                    f = open(self.path, "w")
+                    f = codecs.open(self.path, "w", 'utf8')
                     f.write(beer_xml)
                     f.close()
                     self.cbpi.notify("Success", "XML Recipe {} has been uploaded".format(filename), NotificationType.SUCCESS)
             except:
-                self.cbpi.notify("Error" "XML Recipe upload failed", NotificationType.ERROR)
+                self.cbpi.notify("Error", "XML Recipe upload failed-Encoding:{}".format(encoding), NotificationType.ERROR)
                 pass
 
         elif content_type == 'application/octet-stream':
