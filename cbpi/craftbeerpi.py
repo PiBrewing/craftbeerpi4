@@ -79,12 +79,13 @@ async def error_middleware(request, handler):
 
 class CraftBeerPi:
 
-    def __init__(self):
+    def __init__(self, configFolder):
         self.path = os.sep.join(os.path.abspath(__file__).split(os.sep)[:-1])  # The path to the package dir
         
         self.version = __version__
 
-        self.static_config = load_config(os.path.join(".", 'config', "config.yaml"))
+        self.config_folder = configFolder
+        self.static_config = load_config(configFolder.get_file_path("config.yaml"))
         
         logger.info("Init CraftBeerPI")
 

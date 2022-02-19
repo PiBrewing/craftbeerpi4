@@ -92,7 +92,7 @@ class FermentationController:
         self.update_key = "fermenterupdate"
         self.cbpi = cbpi
         self.logger = logging.getLogger(__name__)
-        self.path = os.path.join(".", 'config', "fermenter_data.json")
+        self.path = self.cbpi.config_folder.get_file_path("fermenter_data.json")
         self._loop = asyncio.get_event_loop() 
         self.data = []
         self.types = {}
@@ -106,13 +106,13 @@ class FermentationController:
         pass
 
     def check_fermenter_file(self):
-        if os.path.exists(os.path.join(".", 'config', "fermenter_data.json")) is False:
+        if os.path.exists(self.cbpi.config_folder.get_file_path("fermenter_data.json")) is False:
             logging.info("INIT fermenter_data.json file")
             data = {
                     "data": [
                             ]
                     }
-            destfile = os.path.join(".", 'config', "fermenter_data.json")
+            destfile = self.cbpi.config_folder.get_file_path("fermenter_data.json")
             json.dump(data,open(destfile,'w'),indent=4, sort_keys=True)
 
     async def shutdown(self, app=None):    

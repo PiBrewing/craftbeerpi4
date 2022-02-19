@@ -185,7 +185,7 @@ class PluginController():
     async def load_plugin_list(self):
         result = []
         try:
-            with open(os.path.join(".", 'config', "config.yaml"), 'rt') as f:
+            with open(self.cbpi.config_folder.get_file_path("config.yaml"), 'rt') as f:
                 data = yaml.load(f, Loader=yaml.FullLoader)
 
                 for p in data["plugins"]:
