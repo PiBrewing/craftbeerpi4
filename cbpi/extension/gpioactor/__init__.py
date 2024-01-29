@@ -159,6 +159,68 @@ class GPIOPWMActor(CBPiActor):
         while self.running == True:
             await asyncio.sleep(1)
 
+@parameters([Property.Select(label="GPIO", options=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]), Property.Number(label="Frequency", configurable=True)])
+class GPIOInvPWMActor(CBPiActor):
+
+    # Custom property which can be configured by the user
+    @action("Set Power", parameters=[Property.Number(label="Power", configurable=True,description="Power Setting [0-100]")])
+    async def setpower(self,Power = 100 ,**kwargs):
+        logging.info(Power)
+        self.power=int(Power)
+        if self.power < 0:
+            self.power = 0
+        if self.power > 100:
+            self.power = 100           
+        await self.set_power(self.power)
+
+    async def on_start(self):
+        self.gpio = self.props.get("GPIO", None)
+        self.frequency = self.props.get("Frequency", 0.5)
+        if self.gpio is not None:
+            GPIO.setup(self.gpio, GPIO.OUT)
+            GPIO.output(self.gpio, 1) # Set pin HIGH on initialization to keep output off
+        self.state = False
+        self.power = None
+        self.p = None
+        pass
+
+    async def on(self, power = None):
+        logging.debug("PWM Actor Power: {}".format(power))
+        if power is not None:
+            self.power = power
+        else:
+            self.power = 100
+
+        logging.debug("PWM Final Power: {}".format(self.power))    
+        
+        logger.debug("PWM ACTOR %s ON - GPIO %s - Frequency %s - Power %s" %  (self.id, self.gpio,self.frequency,self.power))
+        try:
+            if self.p is None:
+                self.p = GPIO.PWM(int(self.gpio), float(self.frequency))
+            self.p.start(100 - self.power) # Set power to 100-value to invert output
+            self.state = True
+#            await self.cbpi.actor.actor_update(self.id,self.power)
+        except:
+            pass
+
+    async def off(self):
+        logger.info("PWM ACTOR %s OFF - GPIO %s " % (self.id, self.gpio))
+        self.p.ChangeDutyCycle(100) # Set power to 100 to invert output and turn off
+        self.state = False
+
+    async def set_power(self, power):
+        if self.p and self.state == True:
+            self.p.ChangeDutyCycle(100 - power) # Set power to 100-value to invert output
+        await self.cbpi.actor.actor_update(self.id,power)
+        pass
+
+    def get_state(self):
+        return self.state
+    
+    async def run(self):
+        while self.running == True:
+            await asyncio.sleep(1)
+
 def setup(cbpi):
 
     '''
@@ -171,3 +233,4 @@ def setup(cbpi):
 
     cbpi.plugin.register("GPIOActor", GPIOActor)
     cbpi.plugin.register("GPIOPWMActor", GPIOPWMActor)
+    cbpi.plugin.register("GPIOInvPWMActor", GPIOInvPWMActor) # Adds the new Inverted PWM actor to the dropdown
