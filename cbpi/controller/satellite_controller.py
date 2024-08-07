@@ -27,6 +27,7 @@ class SatelliteController:
             ("cbpi/actor/+/on", self._actor_on),
             ("cbpi/actor/+/off", self._actor_off),
             ("cbpi/actor/+/power", self._actor_power),
+            ("cbpi/actor/+/output", self._actor_output),
             ("cbpi/updateactor", self._actorupdate),
             ("cbpi/updatekettle", self._kettleupdate),
             ("cbpi/updatesensor", self._sensorupdate),
@@ -123,6 +124,21 @@ class SatelliteController:
                     self.logger.warning("Failed to set actor power via mqtt. No valid power in message")
             except:
                 self.logger.warning("Failed to set actor power via mqtt")
+    
+    async def _actor_output(self, message):
+            try:
+                topic_key = str(message.topic).split("/")
+                try:
+                    output=int(message.payload.decode())
+                    #if power > 100: 
+                    #    power = 100
+                    #if power < 0:
+                    #    power = 0
+                    await self.cbpi.actor.set_output(topic_key[2],output)
+                except:
+                    self.logger.warning("Failed to set actor output via mqtt. No valid output in message")
+            except:
+                self.logger.warning("Failed to set actor output via mqtt")
 
     async def _kettleupdate(self, message):
             try:

@@ -24,7 +24,7 @@ class DummyActor(CBPiActor):
     async def start(self):
         await super().start()
 
-    async def on(self, power=0):
+    async def on(self, power=0, output=0):
         logger.info("ACTOR %s ON " %  self.id)
         self.state = True
 

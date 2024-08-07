@@ -9,7 +9,7 @@ class ActorController(BasicController):
         self.update_key = "actorupdate"
         self.sorting=True
 
-    async def on(self, id, power=None):
+    async def on(self, id, power=None, output=None):
         try:
             item = self.find_by_id(id)
             if power is None:
@@ -18,14 +18,22 @@ class ActorController(BasicController):
                     power = item.power
                 else:
                     power = 100
+               
+            if output is None:
+                logging.info("Output is none")
+                if item.output:
+                    output = item.output
+                else:
+                    output = 100
             if item.instance.state is False:
-                await item.instance.on(power)
+                await item.instance.on(power,output)
                 #await self.push_udpate()
                 self.cbpi.ws.send(dict(topic=self.update_key, data=list(map(lambda item: item.to_dict(), self.data))),self.sorting)
                 self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict(), True)
             else:
                 await self.set_power(id, power)
-                
+                await self.set_output(id, output)
+
         except Exception as e:
             logging.error("Failed to switch on Actor {} {}".format(id, e))
 
@@ -57,10 +65,18 @@ class ActorController(BasicController):
         except Exception as e:
             logging.error("Failed to set power {} {}".format(id, e))
 
-    async def actor_update(self, id, power):
+    async def set_output(self, id, output):
+        try:
+            item = self.find_by_id(id)
+            await item.instance.set_output(output)
+        except Exception as e:
+            logging.error("Failed to set output {} {}".format(id, e))
+
+    async def actor_update(self, id, power, output):
         try:
             item = self.find_by_id(id)
             item.power = round(power)
+            item.output = round(output)
             #await self.push_udpate()
             self.cbpi.ws.send(dict(topic=self.update_key, data=list(map(lambda item: item.to_dict(), self.data))),self.sorting)
             self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict())
