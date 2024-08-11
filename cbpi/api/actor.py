@@ -22,6 +22,7 @@ class CBPiActor(metaclass=ABCMeta):
         self.running = False
         self.power = 100
         self.output = 100
+        self.maxoutput = 100
         self.timer = 0
 
     def init(self):
@@ -72,7 +73,7 @@ class CBPiActor(metaclass=ABCMeta):
     async def add_config_value(self, name, value, type: ConfigType, description, options=None):
         await self.cbpi.add(name, value, type, description, options=None)
 
-    async def on(self, power, output):
+    async def on(self, power, output=None):
         '''
         Code to switch the actor on. Power is provided as integer value  
         

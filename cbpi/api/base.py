@@ -65,7 +65,7 @@ class CBPiBase(metaclass=ABCMeta):
             logging.error("Failed to read actor state in step - actor {}".format(id))
             return False 
 
-    async def actor_on(self,id,power=100, output=100):
+    async def actor_on(self,id,power=100, output=None):
         
         try:
             await self.cbpi.actor.on(id,power, output)

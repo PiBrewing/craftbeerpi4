@@ -26,7 +26,10 @@ class ActorController(BasicController):
                 else:
                     output = 100
             if item.instance.state is False:
-                await item.instance.on(power,output)
+                try:
+                    await item.instance.on(power, output) 
+                except:
+                    await item.instance.on(power)
                 #await self.push_udpate()
                 self.cbpi.ws.send(dict(topic=self.update_key, data=list(map(lambda item: item.to_dict(), self.data))),self.sorting)
                 self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict(), True)
@@ -62,6 +65,10 @@ class ActorController(BasicController):
         try:
             item = self.find_by_id(id)
             await item.instance.set_power(power)
+            output = round(item.maxoutput*power/100)
+            if item.output != output:
+                item.output = output
+
         except Exception as e:
             logging.error("Failed to set power {} {}".format(id, e))
 
@@ -69,14 +76,22 @@ class ActorController(BasicController):
         try:
             item = self.find_by_id(id)
             await item.instance.set_output(output)
+            if item.output != output:
+                item.output=output
+                power=round(output/item.maxoutput*100)
+                if item.power != power:
+                    await item.instance.set_power(power)
         except Exception as e:
             logging.error("Failed to set output {} {}".format(id, e))
 
-    async def actor_update(self, id, power, output):
+    async def actor_update(self, id, power, output=None, maxoutput=None):
         try:
             item = self.find_by_id(id)
+            if maxoutput:
+                item.maxoutput=maxoutput
             item.power = round(power)
-            item.output = round(output)
+            if output:
+                item.output = round(output)
             #await self.push_udpate()
             self.cbpi.ws.send(dict(topic=self.update_key, data=list(map(lambda item: item.to_dict(), self.data))),self.sorting)
             self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict())
