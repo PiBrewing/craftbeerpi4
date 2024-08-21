@@ -1,3 +1,3 @@
-__version__ = "4.5.0.a1"
+__version__ = "4.5.0.a2"
 __codename__ = "Summer break"
 

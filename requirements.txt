@@ -1,5 +1,5 @@
 typing-extensions>=4
-aiohttp==3.9.5
+aiohttp==3.10.5
 aiohttp-auth==0.1.1 
 aiohttp-route-decorator==0.1.4 
 aiohttp-security==0.5.0 
