@@ -5,14 +5,15 @@ from .generic_mqtt_actor import GenericMqttActor
 from .tasmota_mqtt_actor import TasmotaMqttActor
 from .output_mqtt_actor import OutputMQTTActor
 
+
 def setup(cbpi):
-    '''
+    """
     This method is called by the server during startup
     Here you need to register your plugins at the server
 
     :param cbpi: the cbpi core
     :return:
-    '''
+    """
     if str(cbpi.static_config.get("mqtt", False)).lower() == "true":
         cbpi.plugin.register("MQTTActor", MQTTActor)
         cbpi.plugin.register("MQTT Actor (Generic)", GenericMqttActor)
