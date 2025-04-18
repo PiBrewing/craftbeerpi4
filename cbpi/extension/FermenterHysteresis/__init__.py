@@ -13,6 +13,7 @@ from cbpi.api.dataclasses import Fermenter, Props, Step
 from cbpi.controller.fermentation_controller import FermentationController
 
 
+
 class FermenterAutostart(CBPiExtension):
 
     def __init__(self, cbpi):
@@ -109,6 +110,9 @@ class FermenterHysteresis(CBPiFermenterLogic):
             self.cooler_offset_max = float(self.props.get("CoolerOffsetOff", 0))
             self.heater_max_power = int(self.props.get("HeaterMaxPower", 100))
             self.cooler_max_power = int(self.props.get("CoolerMaxPower", 100))
+            self.heater_max_output = self.heater_max_power
+            self.cooler_max_output = self.cooler_max_power
+
 
             self.fermenter = self.get_fermenter(self.id)
             self.heater = self.fermenter.heater
@@ -135,7 +139,9 @@ class FermenterHysteresis(CBPiFermenterLogic):
 
                 if sensor_value + self.heater_offset_min <= target_temp:
                     if self.heater and (heater_state == False):
-                        await self.actor_on(self.heater, self.heater_max_power)
+                        await self.actor_on(
+                            self.heater, self.heater_max_power, self.heater_max_output
+                        )
 
                 if sensor_value + self.heater_offset_max >= target_temp:
                     if self.heater and (heater_state == True):
@@ -143,7 +149,9 @@ class FermenterHysteresis(CBPiFermenterLogic):
 
                 if sensor_value >= self.cooler_offset_min + target_temp:
                     if self.cooler and (cooler_state == False):
-                        await self.actor_on(self.cooler, self.cooler_max_power)
+                        await self.actor_on(
+                            self.cooler, self.cooler_max_power, self.cooler_max_output
+                        )
 
                 if sensor_value <= self.cooler_offset_max + target_temp:
                     if self.cooler and (cooler_state == True):
