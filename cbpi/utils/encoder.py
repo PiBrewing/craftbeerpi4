@@ -3,6 +3,7 @@ from json import JSONEncoder
 
 from pandas import Timestamp
 
+
 class ComplexEncoder(JSONEncoder):
 
     def default(self, obj):
@@ -13,12 +14,12 @@ class ComplexEncoder(JSONEncoder):
             elif isinstance(obj, datetime.datetime):
                 return obj.__str__()
             elif isinstance(obj, Timestamp):
-                #print("TIMe")
+                # print("TIMe")
                 return obj.__str__()
             else:
-                #print(type(obj))
+                # print(type(obj))
                 raise TypeError()
         except Exception as e:
-            
+
             pass
         return None

@@ -1,32 +1,30 @@
-from cbpi.controller.upload_controller import UploadController
-from cbpi.api.dataclasses import Props, Step
-from aiohttp import web
-from cbpi.api import *
 import logging
 
-class UploadHttpEndpoints():
+from aiohttp import web
+from cbpi.api import *
+from cbpi.api.dataclasses import Props, Step
+from cbpi.controller.upload_controller import UploadController
+
+
+class UploadHttpEndpoints:
 
     def __init__(self, cbpi):
         self.cbpi = cbpi
-        self.controller : UploadController = cbpi.upload
+        self.controller: UploadController = cbpi.upload
         self.cbpi.register(self, "/upload")
 
-
-    @request_mapping(path='/', method="POST", auth_required=False)
+    @request_mapping(path="/", method="POST", auth_required=False)
     async def FileUpload(self, request):
         data = await request.post()
         await self.controller.FileUpload(data)
         return web.Response(status=200)
 
-
-
-
-    @request_mapping(path='/kbh', method="GET", auth_required=False)
+    @request_mapping(path="/kbh", method="GET", auth_required=False)
     async def get_kbh_list(self, request):
         """
 
         ---
-        description: Get Recipe list from Kleiner Brauhelfer 
+        description: Get Recipe list from Kleiner Brauhelfer
         tags:
         - Upload
         responses:
@@ -37,7 +35,7 @@ class UploadHttpEndpoints():
         kbh_list = await self.controller.get_kbh_recipes()
         return web.json_response(kbh_list)
 
-    @request_mapping(path='/kbh', method="POST", auth_required=False)
+    @request_mapping(path="/kbh", method="POST", auth_required=False)
     async def create_kbh_recipe(self, request):
         """
 
@@ -57,10 +55,10 @@ class UploadHttpEndpoints():
         """
 
         kbh_id = await request.json()
-        await self.controller.kbh_recipe_creation(kbh_id['id'])
+        await self.controller.kbh_recipe_creation(kbh_id["id"])
         return web.Response(status=200)
 
-    @request_mapping(path='/xml', method="GET", auth_required=False)
+    @request_mapping(path="/xml", method="GET", auth_required=False)
     async def get_xml_list(self, request):
         """
 
@@ -77,7 +75,7 @@ class UploadHttpEndpoints():
 
         return web.json_response(xml_list)
 
-    @request_mapping(path='/xml', method="POST", auth_required=False)
+    @request_mapping(path="/xml", method="POST", auth_required=False)
     async def create_xml_recipe(self, request):
         """
 
@@ -98,10 +96,10 @@ class UploadHttpEndpoints():
         """
 
         xml_id = await request.json()
-        await self.controller.xml_recipe_creation(xml_id['id'])
+        await self.controller.xml_recipe_creation(xml_id["id"])
         return web.Response(status=200)
 
-    @request_mapping(path='/json', method="GET", auth_required=False)
+    @request_mapping(path="/json", method="GET", auth_required=False)
     async def get_json_list(self, request):
         """
 
@@ -118,7 +116,7 @@ class UploadHttpEndpoints():
 
         return web.json_response(json_list)
 
-    @request_mapping(path='/json', method="POST", auth_required=False)
+    @request_mapping(path="/json", method="POST", auth_required=False)
     async def create_json_recipe(self, request):
         """
 
@@ -139,10 +137,10 @@ class UploadHttpEndpoints():
         """
 
         json_id = await request.json()
-        await self.controller.json_recipe_creation(json_id['id'])
+        await self.controller.json_recipe_creation(json_id["id"])
         return web.Response(status=200)
 
-    @request_mapping(path='/bf/{offset}/', method="POST", auth_required=False)
+    @request_mapping(path="/bf/{offset}/", method="POST", auth_required=False)
     async def get_bf_list(self, request):
         """
 
@@ -154,12 +152,12 @@ class UploadHttpEndpoints():
             "200":
                 description: successful operation
         """
-        offset = request.match_info['offset']
+        offset = request.match_info["offset"]
         bf_list = await self.controller.get_brewfather_recipes(offset)
 
         return web.json_response(bf_list)
 
-    @request_mapping(path='/bfupdate/', method="GET", auth_required=False)
+    @request_mapping(path="/bfupdate/", method="GET", auth_required=False)
     async def get_bf_update(self, request):
         """
 
@@ -171,12 +169,12 @@ class UploadHttpEndpoints():
             "200":
                 description: successful operation
         """
-        #offset = request.match_info['offset']
+        # offset = request.match_info['offset']
         bf_list = await self.controller.get_brewfather_recipes()
         self.cbpi.ws.send(dict(topic="bfupdate", data=bf_list))
         return web.Response(status=200)
 
-    @request_mapping(path='/bf', method="POST", auth_required=False)
+    @request_mapping(path="/bf", method="POST", auth_required=False)
     async def create_bf_recipe(self, request):
         """
 
@@ -197,12 +195,11 @@ class UploadHttpEndpoints():
         """
 
         bf_id = await request.json()
-        await self.controller.bf_recipe_creation(bf_id['id'])
+        await self.controller.bf_recipe_creation(bf_id["id"])
         return web.Response(status=200)
 
     @request_mapping(path="/getpath", auth_required=False)
     async def http_getpath(self, request):
-        
         """
 
         ---
@@ -213,5 +210,4 @@ class UploadHttpEndpoints():
             "200":
                 description: successful operation
         """
-        return  web.json_response(data=self.controller.get_creation_path())
-
+        return web.json_response(data=self.controller.get_creation_path())

@@ -1,29 +1,29 @@
-
+import json
 import logging
 import os.path
+import re
 from os import listdir
 from os.path import isfile, join
-import json
+
 import shortuuid
 import yaml
+
 from ..api.step import StepMove, StepResult, StepState
 
-import re
 
 class FermenterRecipeController:
-
 
     def __init__(self, cbpi):
         self.cbpi = cbpi
         self.logger = logging.getLogger(__name__)
-    
+
     def urlify(self, s):
 
         # Remove all non-word characters (everything except numbers and letters)
-        s = re.sub(r"[^\w\s]", '', s)
+        s = re.sub(r"[^\w\s]", "", s)
 
         # Replace all runs of whitespace with a single dash
-        s = re.sub(r"\s+", '-', s)
+        s = re.sub(r"\s+", "-", s)
 
         return s
 
@@ -40,15 +40,16 @@ class FermenterRecipeController:
         logging.info(data)
         with open(path, "w") as file:
             yaml.dump(data, file, indent=4, sort_keys=True)
-        
-        
+
     async def get_recipes(self):
         fermenter_recipe_ids = self.cbpi.config_folder.get_all_fermenter_recipes()
 
         result = []
         for recipe_id in fermenter_recipe_ids:
 
-            with open(self.cbpi.config_folder.get_fermenter_recipe_by_id(recipe_id)) as file:
+            with open(
+                self.cbpi.config_folder.get_fermenter_recipe_by_id(recipe_id)
+            ) as file:
                 data = yaml.load(file, Loader=yaml.FullLoader)
                 dataset = data["basic"]
                 dataset["file"] = recipe_id
@@ -59,7 +60,7 @@ class FermenterRecipeController:
     async def get_by_name(self, name):
         recipe_path = self.cbpi.config_folder.get_fermenter_recipe_by_id(name)
         with open(recipe_path) as file:
-            return  yaml.load(file, Loader=yaml.FullLoader)
+            return yaml.load(file, Loader=yaml.FullLoader)
 
     async def remove(self, name):
         path = self.cbpi.config_folder.get_fermenter_recipe_by_id(name)

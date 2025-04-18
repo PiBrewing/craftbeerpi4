@@ -1,11 +1,11 @@
 import asyncio
 import logging
-from abc import abstractmethod, ABCMeta
-from cbpi.api.extension import CBPiExtension
-from cbpi.api.dataclasses import DataType
-
+from abc import ABCMeta, abstractmethod
 
 from cbpi.api.base import CBPiBase
+from cbpi.api.dataclasses import DataType
+from cbpi.api.extension import CBPiExtension
+
 
 class CBPiSensor(CBPiBase, metaclass=ABCMeta):
 
@@ -17,7 +17,7 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
         self.data_logger = None
         self.state = False
         self.running = False
-        self.datatype=DataType.VALUE
+        self.datatype = DataType.VALUE
         self.inrange = True
         self.temprange = 0
         self.kettle = None
@@ -43,30 +43,46 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
         if self.kettle is not None and self.fermenter is not None:
             return True
         try:
-            if self.kettle is not None: 
-                target_temp=float(self.kettle.target_temp)
+            if self.kettle is not None:
+                target_temp = float(self.kettle.target_temp)
             if self.fermenter is not None:
-                target_temp=float(self.fermenter.target_temp)
+                target_temp = float(self.fermenter.target_temp)
 
-            diff=abs(target_temp-value)
-            if diff>self.temprange:
+            diff = abs(target_temp - value)
+            if diff > self.temprange:
                 return False
             else:
                 return True
         except Exception as e:
             return True
 
-
-    def push_update(self, value, mqtt = True):
-        if self.temprange !=0:
+    def push_update(self, value, mqtt=True):
+        if self.temprange != 0:
             self.inrange = self.checkrange(value)
         else:
             self.inrange = True
-        try:           
-            self.cbpi.ws.send(dict(topic="sensorstate", id=self.id, value=value, datatype=self.datatype.value, inrange=self.inrange))
+        try:
+            self.cbpi.ws.send(
+                dict(
+                    topic="sensorstate",
+                    id=self.id,
+                    value=value,
+                    datatype=self.datatype.value,
+                    inrange=self.inrange,
+                )
+            )
             if mqtt:
-                self.cbpi.push_update("cbpi/sensordata/{}".format(self.id), dict(id=self.id, value=value, datatype=self.datatype.value, inrange=self.inrange), retain=True)
-#            self.cbpi.push_update("cbpi/sensor/{}/udpate".format(self.id), dict(id=self.id, value=value), retain=True)
+                self.cbpi.push_update(
+                    "cbpi/sensordata/{}".format(self.id),
+                    dict(
+                        id=self.id,
+                        value=value,
+                        datatype=self.datatype.value,
+                        inrange=self.inrange,
+                    ),
+                    retain=True,
+                )
+        #            self.cbpi.push_update("cbpi/sensor/{}/udpate".format(self.id), dict(id=self.id, value=value), retain=True)
         except:
             logging.error("Failed to push sensor update for sensor {}".format(self.id))
 
@@ -84,7 +100,7 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
 
     async def run(self):
         pass
-    
+
     async def _run(self):
 
         try:

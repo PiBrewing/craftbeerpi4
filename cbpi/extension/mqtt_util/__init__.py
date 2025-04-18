@@ -1,22 +1,24 @@
-import logging
 import asyncio
+import logging
+
 from cbpi.api import *
-from cbpi.api.config import ConfigType
 from cbpi.api.base import CBPiBase
+from cbpi.api.config import ConfigType
 from cbpi.controller.fermentation_controller import FermentationController
 from cbpi.controller.kettle_controller import KettleController
 
 logger = logging.getLogger(__name__)
 
+
 class MQTTUtil(CBPiExtension):
 
-    def __init__(self,cbpi):
+    def __init__(self, cbpi):
         self.cbpi = cbpi
         self.kettlecontroller = cbpi.kettle
         self.fermentationcontroller = cbpi.fermenter
         # sensor and actor update is done anyhow during startup
-#        self.sensorcontroller = cbpi.sensor
-#        self.actorcontroller = cbpi.actor
+        #        self.sensorcontroller = cbpi.sensor
+        #        self.actorcontroller = cbpi.actor
 
         self.mqttupdate = int(self.cbpi.config.get("MQTTUpdate", 0))
         if self.mqttupdate != 0:
@@ -30,45 +32,48 @@ class MQTTUtil(CBPiExtension):
         await asyncio.sleep(5)
         self.push_update()
 
-
     async def run(self):
 
         while True:
             self.push_update()
             await asyncio.sleep(self.mqttupdate)
 
-    def remove_key(self,d, key):
+    def remove_key(self, d, key):
         r = dict(d)
         del r[key]
         return r
 
     def push_update(self):
-#        try:
-#            self.actor=self.actorcontroller.get_state()
-#            for item in self.actor['data']:
-#                self.cbpi.push_update("cbpi/{}/{}".format("actorupdate",item['id']), item)
-#        except Exception as e:
-#            logging.error(e)
-#            pass
-#        try:
-#            self.sensor=self.sensorcontroller.get_state()
-#            for item in self.sensor['data']:
-#                self.cbpi.push_update("cbpi/{}/{}".format("sensorupdate",item['id']), item)
-#        except Exception as e:
-#            logging.error(e)
-#            pass
+        #        try:
+        #            self.actor=self.actorcontroller.get_state()
+        #            for item in self.actor['data']:
+        #                self.cbpi.push_update("cbpi/{}/{}".format("actorupdate",item['id']), item)
+        #        except Exception as e:
+        #            logging.error(e)
+        #            pass
+        #        try:
+        #            self.sensor=self.sensorcontroller.get_state()
+        #            for item in self.sensor['data']:
+        #                self.cbpi.push_update("cbpi/{}/{}".format("sensorupdate",item['id']), item)
+        #        except Exception as e:
+        #            logging.error(e)
+        #            pass
         try:
-            self.kettle=self.kettlecontroller.get_state()
-            for item in self.kettle['data']:
-                self.cbpi.push_update("cbpi/{}/{}".format("kettleupdate",item['id']), item)
+            self.kettle = self.kettlecontroller.get_state()
+            for item in self.kettle["data"]:
+                self.cbpi.push_update(
+                    "cbpi/{}/{}".format("kettleupdate", item["id"]), item
+                )
         except Exception as e:
             logging.error(e)
             pass
         try:
-            self.fermenter=self.fermentationcontroller.get_state()
-            for item in self.fermenter['data']: 
-                item_new=self.remove_key(item,"steps")
-                self.cbpi.push_update("cbpi/{}/{}".format("fermenterupdate",item['id']), item_new)
+            self.fermenter = self.fermentationcontroller.get_state()
+            for item in self.fermenter["data"]:
+                item_new = self.remove_key(item, "steps")
+                self.cbpi.push_update(
+                    "cbpi/{}/{}".format("fermenterupdate", item["id"]), item_new
+                )
         except Exception as e:
             logging.error(e)
             pass
