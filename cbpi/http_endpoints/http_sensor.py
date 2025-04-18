@@ -1,10 +1,13 @@
-from cbpi.api.dataclasses import Props, Sensor
+import logging
+
 from aiohttp import web
 from cbpi.api import *
-import logging
+from cbpi.api.dataclasses import Props, Sensor
+
 auth = False
 
-class SensorHttpEndpoints():
+
+class SensorHttpEndpoints:
 
     def __init__(self, cbpi):
         self.cbpi = cbpi
@@ -24,7 +27,6 @@ class SensorHttpEndpoints():
                 description: successful operation
         """
         return web.json_response(data=self.controller.get_state())
-        
 
     @request_mapping(path="/", method="POST", auth_required=False)
     async def http_add(self, request):
@@ -38,10 +40,10 @@ class SensorHttpEndpoints():
           name: body
           description: Created an actor
           required: true
-          
+
           schema:
             type: object
-            
+
             properties:
               name:
                 type: string
@@ -49,21 +51,24 @@ class SensorHttpEndpoints():
                 type: string
               props:
                 type: object
-            example: 
+            example:
               name: "Actor 1"
               type: "CustomActor"
               props: {}
-              
+
         responses:
             "204":
                 description: successful operation
         """
         data = await request.json()
-        sensor = Sensor(name=data.get("name"), props=Props(data.get("props", {})), type=data.get("type"))
+        sensor = Sensor(
+            name=data.get("name"),
+            props=Props(data.get("props", {})),
+            type=data.get("type"),
+        )
         response_data = await self.controller.add(sensor)
 
         return web.json_response(data=response_data.to_dict())
-        
 
     @request_mapping(path="/{id}", method="PUT", auth_required=False)
     async def http_update(self, request):
@@ -96,11 +101,16 @@ class SensorHttpEndpoints():
             "200":
                 description: successful operation
         """
-        id = request.match_info['id']
+        id = request.match_info["id"]
         data = await request.json()
-        sensor = Sensor(id=id, name=data.get("name"), props=Props(data.get("props", {})), type=data.get("type"))
+        sensor = Sensor(
+            id=id,
+            name=data.get("name"),
+            props=Props(data.get("props", {})),
+            type=data.get("type"),
+        )
         return web.json_response(data=(await self.controller.update(sensor)).to_dict())
-    
+
     @request_mapping(path="/{id}", method="DELETE", auth_required=False)
     async def http_delete_one(self, request):
         """
@@ -118,7 +128,7 @@ class SensorHttpEndpoints():
             "204":
                 description: successful operation
         """
-        id = request.match_info['id']
+        id = request.match_info["id"]
         await self.controller.delete(id)
         return web.Response(status=204)
 
@@ -136,14 +146,14 @@ class SensorHttpEndpoints():
           description: "Actor ID"
           required: true
           type: "string"
-          
+
         responses:
             "204":
                 description: successful operation
             "405":
                 description: invalid HTTP Met
         """
-        id = request.match_info['id']
+        id = request.match_info["id"]
         await self.controller.on(id)
         return web.Response(status=204)
 
@@ -161,23 +171,23 @@ class SensorHttpEndpoints():
           description: "Actor ID"
           required: true
           type: "string"
-          
+
         responses:
             "204":
                 description: successful operation
             "405":
                 description: invalid HTTP Met
         """
-        id = request.match_info['id']
+        id = request.match_info["id"]
         await self.controller.off(id)
         return web.Response(status=204)
-    
+
     @request_mapping(path="/{id}", method="GET", auth_required=False)
     async def get_value(self, request):
         """
 
         ---
-        description: Get Sensor Value 
+        description: Get Sensor Value
         tags:
         - Sensor
         parameters:
@@ -187,7 +197,7 @@ class SensorHttpEndpoints():
           type: "string"
           required: true
         """
-        id = request.match_info['id']
+        id = request.match_info["id"]
         sensor_value = self.controller.get_sensor_value(id)
         logging.info(sensor_value)
         return web.json_response(data=sensor_value)
@@ -197,7 +207,7 @@ class SensorHttpEndpoints():
         """
 
         ---
-        description: Call Action for Sensor 
+        description: Call Action for Sensor
         tags:
         - Sensor
         parameters:
@@ -222,9 +232,11 @@ class SensorHttpEndpoints():
             "204":
                 description: successful operation
         """
-        sensor_id = request.match_info['id']
+        sensor_id = request.match_info["id"]
         data = await request.json()
-        #print(data)
-        await self.controller.call_action(sensor_id, data.get("action"), data.get("parameter"))
+        # print(data)
+        await self.controller.call_action(
+            sensor_id, data.get("action"), data.get("parameter")
+        )
 
         return web.Response(status=204)
