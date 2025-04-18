@@ -3,6 +3,7 @@
 [![Build](https://github.com/PiBrewing/craftbeerpi4/actions/workflows/build.yml/badge.svg)](https://github.com/PiBrewing/craftbeerpi4/actions/workflows/build.yml)
 [![GitHub license](https://img.shields.io/github/license/PiBrewing/craftbeerpi4)](https://github.com/PiBrewing/craftbeerpi4/blob/master/LICENSE)
 ![GitHub issues](https://img.shields.io/github/issues-raw/PiBrewing/craftbeerpi4)
+[![GitHub Activity](https://img.shields.io/github/commit-activity/y/PiBrewing/craftbeerpi4.svg?label=commits)](https://github.com/PiBrewing/craftbeerpi4/commits)
 ![PyPI](https://img.shields.io/pypi/v/cbpi4)
 ![Happy Brewing](https://img.shields.io/badge/CraftBeerPi%204-Happy%20Brewing-%23FBB117)
 
@@ -16,6 +17,9 @@ fermentation of beer :beer:.
 ## 📚 Documentation
 Instructions on how to install CraftBeerPi and use its plugins is described
 in the documentation, that can be found here: [gitbook.io](https://openbrewing.gitbook.io/craftbeerpi4_support/).
+
+## 📚 Changelog
+Changelog can be found [here](./CHANGELOG.md)
 
 ### Plugins
 Plugins extend the base functionality of CraftBeerPi 4.

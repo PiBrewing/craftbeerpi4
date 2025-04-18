@@ -1,9 +1,9 @@
-from abc import abstractmethod, ABCMeta
 import asyncio
-from cbpi.api.config import ConfigType
-import time
-
 import logging
+import time
+from abc import ABCMeta, abstractmethod
+
+from cbpi.api.config import ConfigType
 
 
 class CBPiBase(metaclass=ABCMeta):

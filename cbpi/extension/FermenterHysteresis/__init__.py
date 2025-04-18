@@ -1,15 +1,17 @@
 import asyncio
-from asyncio import tasks
+import json
 import logging
-from cbpi.api import *
+import webbrowser
+from asyncio import tasks
+
 import aiohttp
 from aiohttp import web
-from cbpi.controller.fermentation_controller import FermentationController
-from cbpi.api.dataclasses import Fermenter, Props, Step
+from cbpi.api import *
 from cbpi.api.base import CBPiBase
 from cbpi.api.config import ConfigType
-import json
-import webbrowser
+from cbpi.api.dataclasses import Fermenter, Props, Step
+from cbpi.controller.fermentation_controller import FermentationController
+
 
 
 class FermenterAutostart(CBPiExtension):
@@ -110,6 +112,7 @@ class FermenterHysteresis(CBPiFermenterLogic):
             self.cooler_max_power = int(self.props.get("CoolerMaxPower", 100))
             self.heater_max_output = self.heater_max_power
             self.cooler_max_output = self.cooler_max_power
+
 
             self.fermenter = self.get_fermenter(self.id)
             self.heater = self.fermenter.heater

@@ -1,9 +1,10 @@
-from cbpi.api.config import ConfigType
-from enum import Enum
-from typing import Any
-from cbpi.api.step import StepState
 from dataclasses import dataclass, field
-from typing import List
+from enum import Enum
+from typing import Any, List
+
+from cbpi.api.config import ConfigType
+from cbpi.api.step import StepState
+
 
 
 class Props:
@@ -77,12 +78,18 @@ class Actor:
         )
 
     def to_dict(self):
+        if self.instance is not None:
+            state = self.instance.get_state()
+            actortype = self.type
+        else:
+            state = False
+            actortype = self.type  # !!! MISSING TYPE !!!
         return dict(
             id=self.id,
             name=self.name,
-            type=self.type,
+            type=actortype,
             props=self.props.to_dict(),
-            state=self.instance.get_state(),
+            state=state,
             power=self.power,
             output=self.output,
             maxoutput=self.maxoutput,
@@ -176,10 +183,16 @@ class Step:
     def to_dict(self):
 
         msg = self.instance.summary if self.instance is not None else ""
+        msg2 = (
+            self.instance.summary2
+            if ((self.instance is not None) and (self.instance.summary2 is not None))
+            else None
+        )
         return dict(
             id=self.id,
             name=self.name,
             state_text=msg,
+            state_text2=msg2,
             type=self.type,
             status=self.status.value,
             props=self.props.to_dict(),

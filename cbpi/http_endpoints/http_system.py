@@ -1,20 +1,21 @@
-import re
-from aiohttp import web
-from aiohttp import streamer
-from cbpi.job.aiohttp import get_scheduler_from_app
 import logging
-from cbpi.api import request_mapping
-from cbpi.utils import json_dumps
-from cbpi import __version__, __codename__
-import pathlib
 import os
+import pathlib
+import re
+
+from aiohttp import streamer, web
+from cbpi import __codename__, __version__
+from cbpi.api import request_mapping
 from cbpi.controller.system_controller import SystemController
+from cbpi.job.aiohttp import get_scheduler_from_app
+from cbpi.utils import json_dumps
+
 
 class SystemHttpEndpoints:
 
-    def __init__(self,cbpi):
+    def __init__(self, cbpi):
         self.cbpi = cbpi
-        self.controller : SystemController = cbpi.system
+        self.controller: SystemController = cbpi.system
         self.cbpi.register(self, url_prefix="/system")
 
     @request_mapping("/", method="GET", auth_required=False)
@@ -30,24 +31,34 @@ class SystemHttpEndpoints:
         """
         plugin_list = await self.cbpi.plugin.load_plugin_list("cbpi4gui")
         try:
-            version= plugin_list[0].get("Version", "not detected")
+            version = plugin_list[0].get("Version", "not detected")
         except:
-            version="not detected"
+            version = "not detected"
 
-        return web.json_response(data=dict(
-            actor=self.cbpi.actor.get_state(),
-            fermenter=self.cbpi.fermenter.get_state(),
-            sensor=self.cbpi.sensor.get_state(),
-            kettle=self.cbpi.kettle.get_state(),
-            step=self.cbpi.step.get_state(),
-            fermentersteps=self.cbpi.fermenter.get_fermenter_steps(),
-            config=self.cbpi.config.get_state(),
-            notifications=self.cbpi.notification.get_state(),
-            bf_recipes=await self.cbpi.upload.get_brewfather_recipes(0),
-            version=__version__,
-            guiversion=version,
-            codename=__codename__)
-            , dumps=json_dumps)
+        spindle = self.cbpi.config.get("spindledata", "No")
+        if spindle == "Yes":
+            spindledata = True
+        else:
+            spindledata = False
+
+        return web.json_response(
+            data=dict(
+                actor=self.cbpi.actor.get_state(),
+                fermenter=self.cbpi.fermenter.get_state(),
+                sensor=self.cbpi.sensor.get_state(),
+                kettle=self.cbpi.kettle.get_state(),
+                step=self.cbpi.step.get_state(),
+                fermentersteps=self.cbpi.fermenter.get_fermenter_steps(),
+                config=self.cbpi.config.get_state(),
+                notifications=self.cbpi.notification.get_state(),
+                bf_recipes=await self.cbpi.upload.get_brewfather_recipes(0),
+                version=__version__,
+                spindledata=spindledata,
+                guiversion=version,
+                codename=__codename__,
+            ),
+            dumps=json_dumps,
+        )
 
     @request_mapping(path="/logs", auth_required=False)
     async def http_get_log(self, request):
@@ -60,7 +71,7 @@ class SystemHttpEndpoints:
 
     @request_mapping(path="/logs/{name}", method="DELETE", auth_required=False)
     async def delete_log(self, request):
-        log_name = request.match_info['name']
+        log_name = request.match_info["name"]
         self.cbpi.log.delete_log(log_name)
 
     @request_mapping(path="/logs", method="DELETE", auth_required=False)
@@ -68,7 +79,9 @@ class SystemHttpEndpoints:
         self.cbpi.log.delete_logs()
         return web.Response(status=204)
 
-    @request_mapping("/events", method="GET", name="get_all_events", auth_required=False)
+    @request_mapping(
+        "/events", method="GET", name="get_all_events", auth_required=False
+    )
     def get_all_events(self, request):
         """
         ---
@@ -101,7 +114,9 @@ class SystemHttpEndpoints:
                 pass
         return web.json_response(data=result)
 
-    @request_mapping("/restart", method="POST", name="RestartServer", auth_required=False)
+    @request_mapping(
+        "/restart", method="POST", name="RestartServer", auth_required=False
+    )
     async def restart(self, request):
         """
         ---
@@ -115,7 +130,9 @@ class SystemHttpEndpoints:
         await self.controller.restart()
         return web.Response(text="RESTART")
 
-    @request_mapping("/shutdown", method="POST", name="ShutdownSerer", auth_required=False)
+    @request_mapping(
+        "/shutdown", method="POST", name="ShutdownSerer", auth_required=False
+    )
     async def shutdown(self, request):
         """
         ---
@@ -133,7 +150,7 @@ class SystemHttpEndpoints:
     async def backup(self, request):
         """
         ---
-        description: Zip and download Config Folder 
+        description: Zip and download Config Folder
         tags:
         - System
         responses:
@@ -143,28 +160,29 @@ class SystemHttpEndpoints:
                 application/zip:  # Media type
         """
         filename = await self.controller.backupConfig()
-        #filename = "cbpi4_config.zip"
+        # filename = "cbpi4_config.zip"
         file_name = pathlib.Path(os.path.join(".", filename))
-        
+
         response = web.StreamResponse(
             status=200,
-            reason='OK',
-            headers={'Content-Type': 'application/zip'},
+            reason="OK",
+            headers={"Content-Type": "application/zip"},
         )
         await response.prepare(request)
-        with open(file_name, 'rb') as file:
+        with open(file_name, "rb") as file:
             for line in file.readlines():
                 await response.write(line)
 
         await response.write_eof()
         return response
 
-
-    @request_mapping("/log/{logtime}/", method="GET", name="BackupConfig", auth_required=False)
+    @request_mapping(
+        "/log/{logtime}/", method="GET", name="BackupConfig", auth_required=False
+    )
     async def downloadlog(self, request):
         """
         ---
-        description: Zip and download craftbeerpi.service log 
+        description: Zip and download craftbeerpi.service log
         tags:
         - System
         parameters:
@@ -181,10 +199,10 @@ class SystemHttpEndpoints:
                 application/zip:  # Media type
         """
         checklogtime = False
-        logtime = request.match_info['logtime']      
-        
+        logtime = request.match_info["logtime"]
+
         try:
-            test=int(logtime)
+            test = int(logtime)
             checklogtime = True
         except:
             if logtime == "b":
@@ -197,11 +215,11 @@ class SystemHttpEndpoints:
 
             response = web.StreamResponse(
                 status=200,
-                reason='OK',
-                headers={'Content-Type': 'application/zip'},
+                reason="OK",
+                headers={"Content-Type": "application/zip"},
             )
             await response.prepare(request)
-            with open(file_name, 'rb') as file:
+            with open(file_name, "rb") as file:
                 for line in file.readlines():
                     await response.write(line)
 
@@ -211,7 +229,9 @@ class SystemHttpEndpoints:
         else:
             return web.Response(status=400, text='Need integer or "b" for logtime.')
 
-    @request_mapping("/restore", method="POST", name="RestoreConfig", auth_required=False)
+    @request_mapping(
+        "/restore", method="POST", name="RestoreConfig", auth_required=False
+    )
     async def restore(self, request):
         """
         ---
@@ -228,7 +248,9 @@ class SystemHttpEndpoints:
         await self.controller.restoreConfig(data)
         return web.Response(status=200)
 
-    @request_mapping("/systeminfo", method="GET", name="SystemInfo", auth_required=False)
+    @request_mapping(
+        "/systeminfo", method="GET", name="SystemInfo", auth_required=False
+    )
     async def systeminfo(self, request):
         """
         ---
@@ -246,7 +268,7 @@ class SystemHttpEndpoints:
     async def uploadSVG(self, request):
         """
         ---
-        description: Upload SVG file to widgets folder 
+        description: Upload SVG file to widgets folder
         tags:
         - System
         responses:

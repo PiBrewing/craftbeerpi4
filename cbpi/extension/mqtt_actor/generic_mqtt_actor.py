@@ -1,4 +1,5 @@
-from cbpi.api import parameters, Property
+from cbpi.api import Property, parameters
+
 from . import MQTTActor
 
 

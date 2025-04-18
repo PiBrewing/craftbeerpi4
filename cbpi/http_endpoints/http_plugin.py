@@ -1,16 +1,22 @@
+import logging
+
 from aiohttp import web
 from cbpi.api import request_mapping
 from cbpi.utils import json_dumps
-import logging
 
 
 class PluginHttpEndpoints:
 
-    def __init__(self,cbpi):
+    def __init__(self, cbpi):
         self.cbpi = cbpi
         self.cbpi.register(self, url_prefix="/plugin")
 
-    @request_mapping(path="/install/", method="POST", auth_required=False, json_schema={"package_name": str})
+    @request_mapping(
+        path="/install/",
+        method="POST",
+        auth_required=False,
+        json_schema={"package_name": str},
+    )
     async def install(self, request):
         """
         ---
@@ -37,9 +43,18 @@ class PluginHttpEndpoints:
         """
 
         data = await request.json()
-        return web.Response(status=204) if await self.cbpi.plugin.install(data["package_name"]) is True else web.Response(status=500)
+        return (
+            web.Response(status=204)
+            if await self.cbpi.plugin.install(data["package_name"]) is True
+            else web.Response(status=500)
+        )
 
-    @request_mapping(path="/uninstall", method="POST", auth_required=False, json_schema={"package_name": str})
+    @request_mapping(
+        path="/uninstall",
+        method="POST",
+        auth_required=False,
+        json_schema={"package_name": str},
+    )
     async def uninstall(self, request):
         """
         ---
@@ -66,41 +81,44 @@ class PluginHttpEndpoints:
         """
 
         data = await request.json()
-        return web.Response(status=204) if await self.cbpi.plugin.uninstall(data["package_name"]) is True else web.Response(status=500)
-
+        return (
+            web.Response(status=204)
+            if await self.cbpi.plugin.uninstall(data["package_name"]) is True
+            else web.Response(status=500)
+        )
 
     @request_mapping(path="/list", method="GET", auth_required=False)
     async def list(self, request):
         """
-            ---
-            description: Get a list of avialable plugins
-            tags:
-            - Plugin
-            produces:
-            - application/json
-            responses:
-                "200":
-                    description: successful operation. Return "pong" text
-                "405":
-                    description: invalid HTTP Method
-            """
+        ---
+        description: Get a list of avialable plugins
+        tags:
+        - Plugin
+        produces:
+        - application/json
+        responses:
+            "200":
+                description: successful operation. Return "pong" text
+            "405":
+                description: invalid HTTP Method
+        """
         plugin_list = await self.cbpi.plugin.load_plugin_list()
         return web.json_response(plugin_list, dumps=json_dumps)
-    
+
     @request_mapping(path="/names", method="GET", auth_required=False)
     async def names(self, request):
         """
-            ---
-            description: Get a list of avialable plugin names
-            tags:
-            - Plugin
-            produces:
-            - application/json
-            responses:
-                "200":
-                    description: successful operation. Return "pong" text
-                "405":
-                    description: invalid HTTP Method
-            """
+        ---
+        description: Get a list of avialable plugin names
+        tags:
+        - Plugin
+        produces:
+        - application/json
+        responses:
+            "200":
+                description: successful operation. Return "pong" text
+            "405":
+                description: invalid HTTP Method
+        """
         plugin_names = await self.cbpi.plugin.load_plugin_names()
         return web.json_response(plugin_names, dumps=json_dumps)

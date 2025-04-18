@@ -1,66 +1,65 @@
 
 import asyncio
-import sys
 import socket
+import sys
+
 try:
-    from asyncio import set_event_loop_policy, WindowsSelectorEventLoopPolicy
+    from asyncio import WindowsSelectorEventLoopPolicy, set_event_loop_policy
 except ImportError:
     pass
 import json
-from voluptuous.schema_builder import message
-from cbpi.api.dataclasses import NotificationType
-from cbpi.controller.notification_controller import NotificationController
 import logging
-from os import urandom
 import os
-from cbpi import __version__, __codename__
+from os import urandom
+
+import shortuuid
 from aiohttp import web
 from aiohttp_auth import auth
 from aiohttp_session import session_middleware
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 from aiohttp_swagger import setup_swagger
+from cbpi import __codename__, __version__
+from cbpi.api.dataclasses import NotificationType
 from cbpi.api.exceptions import CBPiException
-from voluptuous import MultipleInvalid
-
-from cbpi.controller.dashboard_controller import DashboardController
-from cbpi.controller.job_controller import JobController
 from cbpi.controller.actor_controller import ActorController
 from cbpi.controller.config_controller import ConfigController
+from cbpi.controller.dashboard_controller import DashboardController
+from cbpi.controller.fermentation_controller import FermentationController
+from cbpi.controller.fermenter_recipe_controller import \
+    FermenterRecipeController
+from cbpi.controller.job_controller import JobController
 from cbpi.controller.kettle_controller import KettleController
+from cbpi.controller.log_file_controller import LogController
+from cbpi.controller.notification_controller import NotificationController
 from cbpi.controller.plugin_controller import PluginController
+from cbpi.controller.recipe_controller import RecipeController
+from cbpi.controller.satellite_controller import SatelliteController
 from cbpi.controller.sensor_controller import SensorController
 from cbpi.controller.step_controller import StepController
-from cbpi.controller.recipe_controller import RecipeController
-from cbpi.controller.fermenter_recipe_controller import FermenterRecipeController
-from cbpi.controller.upload_controller import UploadController
-from cbpi.controller.fermentation_controller import FermentationController
-
 from cbpi.controller.system_controller import SystemController
-from cbpi.controller.satellite_controller import SatelliteController
-
-from cbpi.controller.log_file_controller import LogController
-
+from cbpi.controller.upload_controller import UploadController
 from cbpi.eventbus import CBPiEventBus
-from cbpi.http_endpoints.http_login import Login
-from cbpi.utils import *
-from cbpi.websocket import CBPiWebSocket
 from cbpi.http_endpoints.http_actor import ActorHttpEndpoints
-
 from cbpi.http_endpoints.http_config import ConfigHttpEndpoints
 from cbpi.http_endpoints.http_dashboard import DashBoardHttpEndpoints
+from cbpi.http_endpoints.http_fermentation import FermentationHttpEndpoints
+from cbpi.http_endpoints.http_fermenterrecipe import \
+    FermenterRecipeHttpEndpoints
 from cbpi.http_endpoints.http_kettle import KettleHttpEndpoints
+from cbpi.http_endpoints.http_log import LogHttpEndpoints
+from cbpi.http_endpoints.http_login import Login
+from cbpi.http_endpoints.http_notification import NotificationHttpEndpoints
+from cbpi.http_endpoints.http_plugin import PluginHttpEndpoints
+from cbpi.http_endpoints.http_recipe import RecipeHttpEndpoints
 from cbpi.http_endpoints.http_sensor import SensorHttpEndpoints
 from cbpi.http_endpoints.http_step import StepHttpEndpoints
-from cbpi.http_endpoints.http_recipe import RecipeHttpEndpoints
-from cbpi.http_endpoints.http_fermenterrecipe import FermenterRecipeHttpEndpoints
-from cbpi.http_endpoints.http_plugin import PluginHttpEndpoints
 from cbpi.http_endpoints.http_system import SystemHttpEndpoints
-from cbpi.http_endpoints.http_log import LogHttpEndpoints
-from cbpi.http_endpoints.http_notification import NotificationHttpEndpoints
 from cbpi.http_endpoints.http_upload import UploadHttpEndpoints
-from cbpi.http_endpoints.http_fermentation import FermentationHttpEndpoints
+from cbpi.utils import *
+from cbpi.websocket import CBPiWebSocket
+from voluptuous import MultipleInvalid
+from voluptuous.schema_builder import message
 
-import shortuuid
 logger = logging.getLogger(__name__)
 
 @web.middleware
@@ -81,7 +80,11 @@ async def error_middleware(request, handler):
         return web.json_response(status=500, data={'error': str(ex)})
     except Exception as ex:
         return web.json_response(status=500, data={'error': str(ex)})
-
+    except web.GracefulExit:
+        return web.json_response(status=500, data={'error': "GracefulExit"})
+    except asyncio.exceptions.CancelledError:
+        return web.json_response(status=500, data={'error': "CancelledError"})
+        
     return web.json_response(status=500, data={'error': message})
 
 
@@ -235,13 +238,13 @@ class CraftBeerPi:
         :return: 
         '''
         long_description = """
-        This is the api for CraftBeerPi
+        This is the api for CraftBeerPi 4
         """
         setup_swagger(self.app,
                       description=long_description,
-                      title="CraftBeerPi",
+                      title="CraftBeerPi 4",
                       api_version=self.version,
-                      contact="info@craftbeerpi.com")
+                      contact="avollkopf@web.de")
 
 
     def notify(self, title: str, message: str, type: NotificationType = NotificationType.INFO, action=[]) -> None:
@@ -250,7 +253,10 @@ class CraftBeerPi:
     def push_update(self, topic, data, retain=False) -> None:
 
         if self.satellite is not None:
-            asyncio.create_task(self.satellite.publish(topic=topic, message=json.dumps(data), retain=retain))
+            background_tasks = set()
+            task = asyncio.create_task(self.satellite.publish(topic=topic, message=json.dumps(data), retain=retain))
+            background_tasks.add(task)
+            task.add_done_callback(background_tasks.discard)
 
     async def call_initializer(self, app):
         self.initializer = sorted(self.initializer, key=lambda k: k['order'])

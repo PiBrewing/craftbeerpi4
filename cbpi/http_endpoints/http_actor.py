@@ -1,7 +1,9 @@
-from cbpi.api.dataclasses import Actor, Props
 from aiohttp import web
 from cbpi.api import *
 import logging
+
+from cbpi.api.dataclasses import Actor, Props
+
 
 auth = False
 

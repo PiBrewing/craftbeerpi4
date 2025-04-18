@@ -1,8 +1,8 @@
 import asyncio
 import json
-from cbpi.api import parameters, Property, CBPiActor
-from cbpi.api import *
 
+from cbpi.api import *
+from cbpi.api import CBPiActor, Property, parameters
 
 @parameters([Property.Text(label="Topic", configurable=True, description="MQTT Topic")])
 class MQTTActor(CBPiActor):

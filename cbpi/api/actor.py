@@ -1,11 +1,11 @@
-from abc import ABCMeta
 import asyncio
+from abc import ABCMeta
+
 from cbpi.api.config import ConfigType
 
 __all__ = ["CBPiActor"]
 
 import logging
-
 
 logger = logging.getLogger(__file__)
 

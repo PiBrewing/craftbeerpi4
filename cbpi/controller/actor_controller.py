@@ -1,6 +1,7 @@
+import logging
+
 from cbpi.api.dataclasses import Actor
 from cbpi.controller.basic_controller2 import BasicController
-import logging
 from tabulate import tabulate
 
 
@@ -114,6 +115,7 @@ class ActorController(BasicController):
             item.power = round(power)
             if output:
                 item.output = round(output)
+
             # await self.push_udpate()
             self.cbpi.ws.send(
                 dict(

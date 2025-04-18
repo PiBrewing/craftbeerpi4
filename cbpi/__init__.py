@@ -1,3 +1,2 @@
-__version__ = "4.5.0.a2"
-__codename__ = "Summer break"
-
+__version__ = "4.7.0.a0"
+__codename__ = "Hop Master"
