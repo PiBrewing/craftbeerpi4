@@ -414,7 +414,20 @@ def main(context, config_folder_path, logs_folder_path, debug_log_level):
         logger.warning(
             "log folder or log file could not be created or accessed. check folder and file permissions or create the logs folder somewhere you have access with a start option like '--log-folder-path=./logs'"
         )
-        logging.critical(e, exc_info=True)
+        try:
+            logger.warning(
+                "Trying to set rights for cbpi user on the log folder and file"
+            )
+            user = pwd.getpwuid(os.getuid()).pw_name
+            shutil.os.system(f'sudo chown -R {user}:{user} {logs_folder_path}')
+            handler = logging.handlers.RotatingFileHandler(
+                os.path.join(logs_folder_path, f"cbpi.log"), maxBytes=1000000, backupCount=3
+            )
+            logger.addHandler(handler)
+            handler.setFormatter(formatter)
+        except Exception as e:
+            logging.critical(e, exc_info=True)
+    
     cbpi_cli = CraftBeerPiCli(config)
     context.obj = cbpi_cli
 
