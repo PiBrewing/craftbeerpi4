@@ -101,8 +101,8 @@ class MQTTSensor(CBPiSensor):
         pass
 
     async def on_message(self, message):
-        val = json.loads(message.payload.decode())
         try:
+            val = json.loads(message.payload.decode())
             if self.payload_text is not None:
                 for key in self.payload_text:
                     val = val.get(key, None)
