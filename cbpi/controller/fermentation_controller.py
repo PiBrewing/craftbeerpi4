@@ -499,7 +499,7 @@ class FermentationController:
 
             await item.instance.start()
             item.instance.running = True
-            item.instance.task = asyncio.get_event_loop().create_task(
+            item.instance.task = asyncio.create_task(
                 item.instance._run()
             )
 

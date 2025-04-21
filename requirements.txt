@@ -20,7 +20,7 @@ numpy==2.2.4
 cbpi4gui
 click==8.1.7
 importlib_metadata
-aiomqtt==2.3.0
+aiomqtt==2.3.2
 psutil==7.0.0
 zipp>=0.5
 colorama==0.4.6

@@ -18,7 +18,11 @@ async def create_scheduler(
             "A callable object or None is expected, "
             "got {!r}".format(exception_handler)
         )
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+
     return Scheduler(
         cbpi=cbpi,
         loop=loop,

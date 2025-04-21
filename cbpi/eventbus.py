@@ -105,7 +105,12 @@ class CBPiEventBus(object):
         if loop is not None:
             self.loop = loop
         else:
-            self.loop = asyncio.get_event_loop()
+            try:
+                self.loop = asyncio.get_running_loop()
+            except RuntimeError:
+                self.loop = asyncio.new_event_loop()
+
+        #asyncio.set_event_loop(self.loop)
 
     def sync_fire(self, topic: str, timeout=1, **kwargs):
         self.loop.create_task(self.fire(topic=topic, timeout=timeout, **kwargs))
