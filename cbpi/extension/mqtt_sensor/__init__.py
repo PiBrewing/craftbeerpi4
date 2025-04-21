@@ -35,6 +35,7 @@ from cbpi.api.dataclasses import NotificationAction, NotificationType
         Property.Number(
             label="Timeout",
             configurable=True,
+            default_value=60,
             unit="sec",
             description="Timeout in seconds to send notification (default:60 | deactivated: 0)",
         ),

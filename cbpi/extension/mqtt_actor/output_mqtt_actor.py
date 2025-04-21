@@ -9,7 +9,10 @@ import logging
     [
         Property.Text(label="Topic", configurable=True, description="MQTT Topic"),
         Property.Number(
-            label="MaxOutput", configurable=True, description="Max Output Value"
+            label="MaxOutput", configurable=True, 
+            default_value=100,
+            unit="",
+            description="Max Output Value"
         ),
     ]
 )

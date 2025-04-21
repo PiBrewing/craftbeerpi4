@@ -69,6 +69,7 @@ class ReadThread(threading.Thread):
         Property.Select(
             label="Interval",
             options=[1, 5, 10, 30, 60],
+            default_value=1,
             description="Interval in Seconds",
         ),
         Property.Kettle(
@@ -82,11 +83,13 @@ class ReadThread(threading.Thread):
         Property.Number(
             label="ReducedLogging",
             configurable=True,
+            default_value=60,
             description="Reduced logging frequency in seconds if selected Kettle or Fermenter is inactive (default: 60 sec | disabled: 0)",
         ),
         Property.Number(
             label="TempRange",
             configurable=True,
+            default_value=0,
             unit="degree",
             description="Temp range in degree between reading and target temp of fermenter/kettle. Larger difference shows different color in dashboard (default:0 | deactivated: 0)",
         ),

@@ -11,16 +11,18 @@ class Property(object):
         Select Property. The user can select value from list set as options parameter
         """
 
-        def __init__(self, label, options, description=""):
+        def __init__(self, label, options, default_value=None, description=""):
             """
 
             :param label:
             :param options:
+            :param default_value:
             :param description:
             """
             PropertyType.__init__(self)
             self.label = label
             self.options = options
+            self.default_value = default_value
             self.description = description
 
     class Number(PropertyType):
