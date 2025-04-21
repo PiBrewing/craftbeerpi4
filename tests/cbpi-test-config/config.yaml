@@ -18,3 +18,4 @@ password: 123
 plugins:
 - cbpi4ui
 
+mqtt_offset: false

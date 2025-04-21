@@ -6,6 +6,7 @@ from cbpi.api.config import ConfigType
 from cbpi.api.step import StepState
 
 
+
 class Props:
 
     def __init__(self, data={}):
@@ -58,13 +59,22 @@ class Actor:
     props: Props = Props()
     state: bool = False
     power: int = 100
+    maxoutput: int = 100
+    output: int = maxoutput
     timer: int = 0
     type: str = None
     instance: str = None
 
     def __str__(self):
-        return "name={} props={}, state={}, type={}, power={}, timer={}".format(
-            self.name, self.props, self.state, self.type, self.power, self.timer
+        return "name={} props={}, state={}, type={}, power={}, output={}, maxoutput={}, timer={}".format(
+            self.name,
+            self.props,
+            self.state,
+            self.type,
+            self.power,
+            self.output,
+            self.maxoutput,
+            self.timer,
         )
 
     def to_dict(self):
@@ -81,6 +91,8 @@ class Actor:
             props=self.props.to_dict(),
             state=state,
             power=self.power,
+            output=self.output,
+            maxoutput=self.maxoutput,
             timer=self.timer,
         )
 

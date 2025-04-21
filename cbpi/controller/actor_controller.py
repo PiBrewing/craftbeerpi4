@@ -12,7 +12,7 @@ class ActorController(BasicController):
         self.update_key = "actorupdate"
         self.sorting = True
 
-    async def on(self, id, power=None):
+    async def on(self, id, power=None, output=None):
         try:
             item = self.find_by_id(id)
             if power is None:
@@ -21,8 +21,18 @@ class ActorController(BasicController):
                     power = item.power
                 else:
                     power = 100
+
+            if output is None:
+                logging.info("Output is none")
+                if item.output:
+                    output = item.output
+                else:
+                    output = 100
             if item.instance.state is False:
-                await item.instance.on(power)
+                try:
+                    await item.instance.on(power, output)
+                except:
+                    await item.instance.on(power)
                 # await self.push_udpate()
                 self.cbpi.ws.send(
                     dict(
@@ -36,6 +46,7 @@ class ActorController(BasicController):
                 )
             else:
                 await self.set_power(id, power)
+                await self.set_output(id, output)
 
         except Exception as e:
             logging.error("Failed to switch on Actor {} {}".format(id, e))
@@ -77,13 +88,34 @@ class ActorController(BasicController):
         try:
             item = self.find_by_id(id)
             await item.instance.set_power(power)
+            output = round(item.maxoutput * power / 100)
+            if item.output != output:
+                item.output = output
+
         except Exception as e:
             logging.error("Failed to set power {} {}".format(id, e))
 
-    async def actor_update(self, id, power):
+    async def set_output(self, id, output):
         try:
             item = self.find_by_id(id)
+            await item.instance.set_output(output)
+            if item.output != output:
+                item.output = output
+                power = round(output / item.maxoutput * 100)
+                if item.power != power:
+                    await item.instance.set_power(power)
+        except Exception as e:
+            logging.error("Failed to set output {} {}".format(id, e))
+
+    async def actor_update(self, id, power, output=None, maxoutput=None):
+        try:
+            item = self.find_by_id(id)
+            if maxoutput:
+                item.maxoutput = maxoutput
             item.power = round(power)
+            if output:
+                item.output = round(output)
+
             # await self.push_udpate()
             self.cbpi.ws.send(
                 dict(
