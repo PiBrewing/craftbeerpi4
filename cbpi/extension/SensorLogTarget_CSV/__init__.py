@@ -3,7 +3,11 @@ import asyncio
 import base64
 import logging
 import os
-import pwd
+try:
+    import pwd
+    module_pwd = True
+except:
+    module_pwd = False
 import shutil
 import random
 from logging.handlers import RotatingFileHandler

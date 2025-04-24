@@ -563,6 +563,8 @@ class BoilStep(CBPiStep):
 
         self.lid_temp = 95 if self.get_config_value("TEMP_UNIT", "C") == "C" else 203
         self.lid_flag = True if self.props.get("LidAlert", "No") == "Yes" else False
+        self.lid_actor_flag = True if self.lid_flag == True else False
+        self.lid_actor = self.get_config_value("steps_boil_actor", None)
         self.AutoMode = True if self.props.get("AutoMode", "No") == "Yes" else False
         self.AutoTimer = (
             True if self.cbpi.config.get("BoilAutoTimer", "No") == "Yes" else False
@@ -645,6 +647,11 @@ class BoilStep(CBPiStep):
         self.kettle.target_temp = 0
         if self.AutoMode == True:
             await self.setAutoMode(False)
+        if self.lid_actor is not None:
+            try:
+                await self.actor_off(self.lid_actor) 
+            except:
+                pass
         await self.push_update()
 
     async def reset(self):
@@ -707,6 +714,10 @@ class BoilStep(CBPiStep):
                     NotificationType.INFO,
                 )
                 self.lid_flag = False
+
+            if self.lid_actor is not None and sensor_value >= self.lid_temp and self.lid_actor_flag:
+                if self.get_actor_state(self.lid_actor) is False:
+                    await self.actor_on(self.lid_actor)
 
             if (
                 sensor_value >= float(self.props.get("Temp", 0))
