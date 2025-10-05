@@ -26,19 +26,19 @@ class Systemdata(CBPiExtension):
             totalmem=round((int(mem.total) / (1024 * 1024)), 1)
             availablemem=round((int(mem.available) / (1024 * 1024)), 1)
             percentmem=round(float(mem.percent), 1)
-            self.data=[totalmem,availablemem,percentmem]
-            #logging.error("Systemdata: {}".format(self.data))
-            self.cbpi.ws.send(
-                dict(
-                    topic=self.update_key,
-                    data=dict(
-                    totalmem=totalmem,
-                    availablemem=availablemem,
-                    percentmem=percentmem,
-                    )
-                ),self.sorting)
+            if availablemem < 200:
+                logger.error("Low Memory: {} MB".format(availablemem))
+                self.cbpi.ws.send(
+                    dict(
+                        topic=self.update_key,
+                        data=dict(
+                            totalmem=totalmem,
+                            availablemem=availablemem,
+                            percentmem=percentmem,
+                            )
+                        ), self.sorting)
             
-            await asyncio.sleep(30)
+            await asyncio.sleep(60)
 
 
 
