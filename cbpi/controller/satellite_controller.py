@@ -89,7 +89,7 @@ class SatelliteController:
         if self.client is not None and self.client._connected:
             try:
                 await self.client.publish(topic, message, qos=1, retain=retain)
-            except aiomqtt.exceptions.MqttError as e:
+            except aiomqtt.MqttError as e:
                 self.logger.warning("Failed to push data via mqtt: {}".format(e))
 
     async def _actor_on(self, message):
