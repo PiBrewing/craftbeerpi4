@@ -5,7 +5,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from re import M
 
 import shortuuid
-from aiomqtt import Client, MqttError, Will
+import aiomqtt
 from cbpi import __version__
 
 
@@ -44,12 +44,12 @@ class SatelliteController:
 
     async def init(self):
       
-        self.client = Client(
+        self.client = aiomqtt.Client(
             self.host,
             port=self.port,
             username=self.username,
             password=self.password,
-            will=Will(topic="cbpi/disconnect", payload="CBPi Server Disconnected"),
+            will=aiomqtt.Will(topic="cbpi/disconnect", payload="CBPi Server Disconnected"),
             identifier=self.client_id,
         )
         try:
@@ -80,15 +80,16 @@ class SatelliteController:
             except Exception as e:
                 self.logger.error("MQTT General Exception: {}".format(e))
                 break
-            except MqttError as e:
+            except aiomqtt.MqttError as e:
                 self.logger.error("MQTT Exception: {}".format(e))
+
             await asyncio.sleep(5)
 
     async def publish(self, topic, message, retain=False):
         if self.client is not None and self.client._connected:
             try:
                 await self.client.publish(topic, message, qos=1, retain=retain)
-            except Exception as e:
+            except aiomqtt.exceptions.MqttError as e:
                 self.logger.warning("Failed to push data via mqtt: {}".format(e))
 
     async def _actor_on(self, message):
