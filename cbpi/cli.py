@@ -399,9 +399,39 @@ class CraftBeerPiCli:
                         print("Added chromium to labwc autostart")
                     else:
                         print("labwc autostart file already exists")
+                        with open(file, "r") as f:
+                            lines = f.readlines()
+                            chromiumfound = False
+                            for line in lines:
+                                if line.find("chromium") != -1:
+                                    chromiumfound = True
+                            if chromiumfound is True:
+                                print("chromium is already in the autostart file")
+                                return
+                            else:
+                                with open(file, "a") as f:
+                                    f.write('\nchromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                                print("Added chromium to labwc autostart")
                 except Exception as e:
                     print(e)
                     return
+            elif name == "off":
+                print("Remove chromium from labwc autostart")
+                try:
+                    if os.path.exists(file) is False:
+                        print("labwc autostart file does not exist")
+                        return
+                    with open(file, "r") as f:
+                        lines = f.readlines()
+                    with open(file, "w") as f:
+                        for line in lines:
+                            if line.find("chromium") == -1:
+                                f.write(line)
+                    print("Removed chromium from labwc autostart")
+                except Exception as e:
+                    print(e)
+                    return        
+        
 
 
 
