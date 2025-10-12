@@ -418,7 +418,7 @@ class CraftBeerPiCli:
                                 return
                             else:
                                 with open(file, "a") as f:
-                                    f.write('\nchromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                                    f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
                                 print("Added chromium to labwc autostart")
                                 print(
                                     "CraftBeerPi Chromium Autostart is {}ON{}".format(
