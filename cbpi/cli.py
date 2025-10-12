@@ -397,7 +397,7 @@ class CraftBeerPiCli:
                         print("Added chromium to labwc autostart")
                         print(
                                 "CraftBeerPi Chromium Autostart is {}ON{}".format(
-                                    Fore.RED, Style.RESET_ALL
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
                                 )
                             )
                     else:
@@ -412,7 +412,7 @@ class CraftBeerPiCli:
                                 print("chromium is already in the autostart file")
                                 print(
                                 "CraftBeerPi Chromium Autostart is {}ON{}".format(
-                                    Fore.RED, Style.RESET_ALL
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
                                 )
                             )
                                 return
@@ -422,7 +422,7 @@ class CraftBeerPiCli:
                                 print("Added chromium to labwc autostart")
                                 print(
                                     "CraftBeerPi Chromium Autostart is {}ON{}".format(
-                                        Fore.RED, Style.RESET_ALL
+                                        Fore.LIGHTGREEN_EX, Style.RESET_ALL
                                     )   
                                 )
                 except Exception as e:
