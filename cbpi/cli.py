@@ -25,6 +25,7 @@ import time
 from subprocess import call
 
 import click
+import distro
 import inquirer
 from colorama import Back, Fore, Style
 from importlib_metadata import metadata
@@ -291,64 +292,71 @@ class CraftBeerPiCli:
             return
 
     def chromium(self, name):
-        """Enable or disable autostart"""
-        if name == "status":
-            if (
-                os.path.exists(os.path.join("/etc/xdg/autostart/", "chromium.desktop"))
-                is True
-            ):
-                print(
-                    "CraftBeerPi Chromium Desktop is {}ON{}".format(
-                        Fore.LIGHTGREEN_EX, Style.RESET_ALL
-                    )
-                )
-            else:
-                print(
-                    "CraftBeerPi Chromium Desktop is {}OFF{}".format(
-                        Fore.RED, Style.RESET_ALL
-                    )
-                )
-        elif name == "on":
-            print("Add chromium.desktop to /etc/xdg/autostart/")
-            try:
+        try:
+            version = int(distro.version())
+        except:
+            version = 0
+
+        if version < 13:
+            """Enable or disable autostart"""
+            if name == "status":
                 if (
-                    os.path.exists(
-                        os.path.join("/etc/xdg/autostart/", "chromium.desktop")
-                    )
-                    is False
-                ):
-                    srcfile = self.config.get_file_path("chromium.desktop")
-                    destfile = os.path.join("/etc/xdg/autostart/")
-                    shutil.os.system('sudo cp "{}" "{}"'.format(srcfile, destfile))
-                    print("Copied chromium.desktop to /etc/xdg/autostart/")
-                else:
-                    print("chromium.desktop is already located in /etc/xdg/autostart/")
-            except Exception as e:
-                print(e)
-                return
-            return
-        elif name == "off":
-            print("Remove chromium.desktop from /etc/xdg/autostart/")
-            try:
-                if (
-                    os.path.exists(
-                        os.path.join("/etc/xdg/autostart/", "chromium.desktop")
-                    )
+                    os.path.exists(os.path.join("/etc/xdg/autostart/", "chromium.desktop"))
                     is True
                 ):
-                    shutil.os.system(
-                        'sudo rm -rf "{}"'.format(
-                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                    print(
+                        "CraftBeerPi Chromium Desktop is {}ON{}".format(
+                            Fore.LIGHTGREEN_EX, Style.RESET_ALL
                         )
                     )
-                    print("Deleted chromium.desktop from /etc/xdg/autostart/")
                 else:
-                    print("chromium.desktop is not located in /etc/xdg/autostart/")
-            except Exception as e:
-                print(e)
+                    print(
+                        "CraftBeerPi Chromium Desktop is {}OFF{}".format(
+                            Fore.RED, Style.RESET_ALL
+                        )
+                    )
+            elif name == "on":
+                print("Add chromium.desktop to /etc/xdg/autostart/")
+                try:
+                    if (
+                        os.path.exists(
+                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                        )
+                        is False
+                    ):
+                        srcfile = self.config.get_file_path("chromium.desktop")
+                        destfile = os.path.join("/etc/xdg/autostart/")
+                        shutil.os.system('sudo cp "{}" "{}"'.format(srcfile, destfile))
+                        print("Copied chromium.desktop to /etc/xdg/autostart/")
+                    else:
+                        print("chromium.desktop is already located in /etc/xdg/autostart/")
+                except Exception as e:
+                    print(e)
+                    return
                 return
-            return
-
+            elif name == "off":
+                print("Remove chromium.desktop from /etc/xdg/autostart/")
+                try:
+                    if (
+                        os.path.exists(
+                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                        )
+                        is True
+                    ):
+                        shutil.os.system(
+                            'sudo rm -rf "{}"'.format(
+                                os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                            )
+                        )
+                        print("Deleted chromium.desktop from /etc/xdg/autostart/")
+                    else:
+                        print("chromium.desktop is not located in /etc/xdg/autostart/")
+                except Exception as e:
+                    print(e)
+                    return
+                return
+        else:
+            print("Chromium autostart not yet supported on Debian 13 or higher. Work in progress")
 
 @click.group()
 @click.pass_context
