@@ -357,6 +357,53 @@ class CraftBeerPiCli:
                 return
         else:
             print("Chromium autostart not yet supported on Debian 13 or higher. Work in progress")
+            user = pwd.getpwuid(os.getuid()).pw_name
+            file = "/home/" + user + "/.config/labwc/autostart"
+
+            if name == "status":
+                if os.path.exists(file) is False:
+                    print(
+                        "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                            Fore.RED, Style.RESET_ALL
+                        )
+                    )
+                    return
+                with open(file, "r") as f:
+                    lines = f.readlines()
+                    chromiumfound = False
+                    for line in lines:
+                        if line.find("chromium") != -1:
+                            chromiumfound = True
+                    if chromiumfound is True:
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                    else:
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )
+                    return
+                    #lines.append("dtoverlay=w1-gpio,gpiopin=4,pullup=on")
+                pass
+            elif name == "on":
+                print("Add chromium to labwc autostart")
+                try:
+                    if os.path.exists(file) is False:
+                        pathlib.Path(file).mkdir(parents=True, exist_ok=True)
+                        with open(file, "a") as f:
+                            f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                        print("Added chromium to labwc autostart")
+                    else:
+                        print("labwc autostart file already exists")
+                except Exception as e:
+                    print(e)
+                    return
+
+
 
 @click.group()
 @click.pass_context
