@@ -82,6 +82,8 @@ class ConfigUpdate(CBPiExtension):
         self.version = __version__
         current_grid = self.cbpi.config.get("current_grid", None)
         mqtt_offset = self.cbpi.static_config.get("mqtt_offset", None)
+        MIN_MEMORY = self.cbpi.config.get("MIN_MEMORY", None)
+
 
         if boil_temp is None:
             logger.info("INIT Boil Temp Setting")
@@ -982,6 +984,19 @@ class ConfigUpdate(CBPiExtension):
                 )
             except:
                 logger.warning("Unable to update config")
+        
+        if MIN_MEMORY is None:
+            logger.info("INIT MIN_MEMORY")
+            try:
+                await self.cbpi.config.add(
+                    "MIN_MEMORY",
+                    200,
+                    type=ConfigType.NUMBER,
+                    description="Minimum required memory in MB for CraftBeerPi to run properly",
+                    source="craftbeerpi",
+                )
+            except:
+                logger.warning("Unable to update database")
 
 
 def setup(cbpi):
