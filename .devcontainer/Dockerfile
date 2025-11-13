@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/python:3.11-bookworm
+FROM mcr.microsoft.com/vscode/devcontainers/python:3.13-trixie
 
 RUN     apt-get update \
     &&  apt-get upgrade -y
