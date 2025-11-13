@@ -81,7 +81,7 @@ setup(name='cbpi4',
           'cbpi4gui',
           'importlib_metadata',
           'distro>=1.8.0',
-          'numpy==2.3.3',
+          'numpy==2.3.4',
           'pandas==2.3.3'] + board_reqs + (
           ['systemd-python'] if localsystem == "Linux" else [] ),
 
