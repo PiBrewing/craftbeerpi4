@@ -56,10 +56,13 @@ class RecipeController:
         for filename in onlyfiles:
             recipe_path = self.cbpi.config_folder.get_recipe_file_by_id(filename)
             with open(recipe_path) as file:
-                data = yaml.load(file, Loader=yaml.FullLoader)
-                dataset = data["basic"]
-                dataset["file"] = filename
-                result.append(dataset)
+                try:
+                    data = yaml.load(file, Loader=yaml.FullLoader)
+                    dataset = data["basic"]
+                    dataset["file"] = filename
+                    result.append(dataset)
+                except:
+                    logging.error('Skip invalid file')
         return result
 
     async def get_by_name(self, name):
