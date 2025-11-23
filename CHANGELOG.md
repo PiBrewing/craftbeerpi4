@@ -1,7 +1,25 @@
 # Changelog
 
+## Server Version 4.7.0 (23.11.25):
+### Codename: Winter Bock
+
+### Maintenance: 
+- Update required packages to latest versions.
+- Update dockerfile requirements.
+- adapt deprecated get_event_loops
+
+### Fixes:
+- Fix error handling for local recipe file loading.
+- Catch empty MQTT values (Error handling).
+- Change rights of log file if file is not accessible.
+
+### Features:
+- Add Chromium autostart feature for trixie os
+- Add function to transfer free memory value to GUI as well as minimum memory config parameter to reload browser page if memory becomes lower.
+- Use output value as alternative (Alternative actor plugin required to ensure higher resolution) instead of power (0-100%).
+- Add optional actor to boilstep for steam condensor or solenoid valve
+
 ## Server Version 4.6.1 (16.04.25):
-### Codename: Hop Master
 
 ### Fixes:
 - Restore Config via raspberryPi did not work. Fix in system controller to check as well for 'application/zip' content type (Issue #162) (4.6.1.a1)

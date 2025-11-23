@@ -1,2 +1,2 @@
-__version__ = "4.7.0.a15"
-__codename__ = "Hop Master"
+__version__ = "4.7.0"
+__codename__ = "Winter Bock"
