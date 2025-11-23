@@ -24,7 +24,6 @@ class BasicController:
         self.logger = logging.getLogger(__name__)
         self.data = []
         self.autostart = True
-        # self._loop = asyncio.get_event_loop()
         self.path = self.cbpi.config_folder.get_file_path(file)
         self.cbpi.app.on_cleanup.append(self.shutdown)
 
@@ -136,21 +135,18 @@ class BasicController:
 
             await item.instance.start()
             item.instance.running = True
-            item.instance.task = asyncio.get_event_loop().create_task(
+            item.instance.task = asyncio.create_task(
                 item.instance._run()
             )
-            # item.instance.task = self._loop.create_task(item.instance._run())
 
             logging.info("{} started {}".format(self.name, id))
 
-        #            await self.push_udpate()
         except Exception as e:
             line = "{} Cant start {} - {}".format(self.name, id, e)
             logging.error(line)
             self.cbpi.notify("Error", line, NotificationType.ERROR)
 
     def get_types(self):
-        #        logging.info("{} Get Types".format(self.name))
         result = {}
         for key, value in self.types.items():
             result[key] = dict(
@@ -161,7 +157,6 @@ class BasicController:
         return result
 
     def get_state(self):
-        #        logging.info("{} Get State".format(self.name))
         return {
             "data": list(map(lambda x: x.to_dict(), self.data)),
             "types": self.get_types(),

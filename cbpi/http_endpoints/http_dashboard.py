@@ -217,3 +217,19 @@ class DashBoardHttpEndpoints:
         return web.json_response(
             await self.cbpi.dashboard.get_slow_pipe_animation(), dumps=json_dumps
         )
+
+
+    @request_mapping(path="/memory", method="GET", auth_required=False)
+    async def get_memory_limit(self, request):
+        """
+        ---
+        description: Get slow down dashboard pipe animation (Yes/No)
+        tags:
+        - Dashboard
+        responses:
+            "200":
+                description: successful operation
+        """
+        meminfo = await self.cbpi.system.get_memory_info()
+
+        return web.json_response(dict(meminfo=meminfo), dumps=json_dumps)

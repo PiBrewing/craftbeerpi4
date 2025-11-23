@@ -440,3 +440,26 @@ class SystemController:
             "wlan0speed": wlan0speed,
         }
         return systeminfo
+
+    async def get_memory_info(self):
+        logging.info("SYSTEMINFO")
+        system = ""
+        totalmem = 0
+        availmem = 0
+        mempercent = 0
+
+        try:
+            mem = psutil.virtual_memory()
+            availmem = round((int(mem.available) / (1024 * 1024)), 1)
+            mempercent = round(float(mem.percent), 1)
+            totalmem = round((int(mem.total) / (1024 * 1024)), 1)
+            meminfo = {
+            "totalmem": totalmem,
+            "availmem": availmem,
+            "mempercent": mempercent,
+            "minmem": self.cbpi.config.get("MIN_MEMORY", 200)
+        }
+        except:
+            pass
+
+        return meminfo

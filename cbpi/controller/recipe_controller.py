@@ -7,6 +7,7 @@ from os.path import isfile, join
 
 import shortuuid
 import yaml
+from cbpi.api.dataclasses import NotificationType
 
 from ..api.step import StepMove, StepResult, StepState
 
@@ -56,10 +57,18 @@ class RecipeController:
         for filename in onlyfiles:
             recipe_path = self.cbpi.config_folder.get_recipe_file_by_id(filename)
             with open(recipe_path) as file:
-                data = yaml.load(file, Loader=yaml.FullLoader)
-                dataset = data["basic"]
-                dataset["file"] = filename
-                result.append(dataset)
+                try:
+                    data = yaml.load(file, Loader=yaml.FullLoader)
+                    dataset = data["basic"]
+                    dataset["file"] = filename
+                    result.append(dataset)
+                except Exception as e:
+                    self.cbpi.notify(
+                        "Error",
+                        f"Invalid recipe file skipped: {filename}",
+                        NotificationType.ERROR,
+                    )
+                    logging.error(f"Skip invalid file: {e}")
         return result
 
     async def get_by_name(self, name):

@@ -5,8 +5,9 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from re import M
 
 import shortuuid
-from aiomqtt import Client, MqttError, Will
+import aiomqtt
 from cbpi import __version__
+
 
 
 class SatelliteController:
@@ -28,6 +29,7 @@ class SatelliteController:
             ("cbpi/actor/+/on", self._actor_on),
             ("cbpi/actor/+/off", self._actor_off),
             ("cbpi/actor/+/power", self._actor_power),
+            ("cbpi/actor/+/output", self._actor_output),
             ("cbpi/updateactor", self._actorupdate),
             ("cbpi/updatekettle", self._kettleupdate),
             ("cbpi/updatesensor", self._sensorupdate),
@@ -41,13 +43,13 @@ class SatelliteController:
         return r
 
     async def init(self):
-
-        self.client = Client(
+      
+        self.client = aiomqtt.Client(
             self.host,
             port=self.port,
             username=self.username,
             password=self.password,
-            will=Will(topic="cbpi/disconnect", payload="CBPi Server Disconnected"),
+            will=aiomqtt.Will(topic="cbpi/disconnect", payload="CBPi Server Disconnected"),
             identifier=self.client_id,
         )
         try:
@@ -59,7 +61,6 @@ class SatelliteController:
             self.logger.info("MQTT Connected to {}:{}".format(self.host, self.port))
         except asyncio.CancelledError as e:
             self.logger.error("MQTT Connection failed: {}".format(e))
-
 
     async def listen(self):
         while True:
@@ -79,15 +80,16 @@ class SatelliteController:
             except Exception as e:
                 self.logger.error("MQTT General Exception: {}".format(e))
                 break
-            except MqttError as e:
+            except aiomqtt.MqttError as e:
                 self.logger.error("MQTT Exception: {}".format(e))
+
             await asyncio.sleep(5)
 
     async def publish(self, topic, message, retain=False):
         if self.client is not None and self.client._connected:
             try:
                 await self.client.publish(topic, message, qos=1, retain=retain)
-            except Exception as e:
+            except aiomqtt.MqttError as e:
                 self.logger.warning("Failed to push data via mqtt: {}".format(e))
 
     async def _actor_on(self, message):
@@ -123,6 +125,23 @@ class SatelliteController:
                 )
         except:
             self.logger.warning("Failed to set actor power via mqtt")
+
+    async def _actor_output(self, message):
+        try:
+            topic_key = str(message.topic).split("/")
+            try:
+                output = int(message.payload.decode())
+                # if power > 100:
+                #    power = 100
+                # if power < 0:
+                #    power = 0
+                await self.cbpi.actor.set_output(topic_key[2], output)
+            except:
+                self.logger.warning(
+                    "Failed to set actor output via mqtt. No valid output in message"
+                )
+        except:
+            self.logger.warning("Failed to set actor output via mqtt")
 
     async def _kettleupdate(self, message):
         try:

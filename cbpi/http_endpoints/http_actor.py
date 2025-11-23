@@ -1,6 +1,9 @@
 from aiohttp import web
 from cbpi.api import *
+import logging
+
 from cbpi.api.dataclasses import Actor, Props
+
 
 auth = False
 
@@ -292,4 +295,37 @@ class ActorHttpEndpoints:
         id = request.match_info["id"]
         data = await request.json()
         await self.controller.set_power(id, data.get("power"))
+        return web.Response(status=204)
+
+    @request_mapping(path="/{id}/set_output", method="POST", auth_required=auth)
+    async def http_set_output(self, request) -> web.Response:
+        """
+
+        ---
+        description: Set actor output
+        tags:
+        - Actor
+        parameters:
+        - name: "id"
+          in: "path"
+          description: "Actor ID"
+          required: true
+          type: "integer"
+          format: "int64"
+        - in: body
+          name: body
+          description: Set Output
+          required: true
+          schema:
+            type: object
+            properties:
+              temp:
+                type: integer
+        responses:
+            "204":
+                description: successful operation
+        """
+        id = request.match_info["id"]
+        data = await request.json()
+        await self.controller.set_output(id, data.get("output"))
         return web.Response(status=204)

@@ -25,6 +25,7 @@ import time
 from subprocess import call
 
 import click
+import distro
 import inquirer
 from colorama import Back, Fore, Style
 from importlib_metadata import metadata
@@ -291,63 +292,170 @@ class CraftBeerPiCli:
             return
 
     def chromium(self, name):
-        """Enable or disable autostart"""
-        if name == "status":
-            if (
-                os.path.exists(os.path.join("/etc/xdg/autostart/", "chromium.desktop"))
-                is True
-            ):
-                print(
-                    "CraftBeerPi Chromium Desktop is {}ON{}".format(
-                        Fore.LIGHTGREEN_EX, Style.RESET_ALL
-                    )
-                )
-            else:
-                print(
-                    "CraftBeerPi Chromium Desktop is {}OFF{}".format(
-                        Fore.RED, Style.RESET_ALL
-                    )
-                )
-        elif name == "on":
-            print("Add chromium.desktop to /etc/xdg/autostart/")
-            try:
+        try:
+            version = int(distro.version())
+        except:
+            version = 0
+
+        if version < 13:
+            """Enable or disable autostart"""
+            if name == "status":
                 if (
-                    os.path.exists(
-                        os.path.join("/etc/xdg/autostart/", "chromium.desktop")
-                    )
-                    is False
-                ):
-                    srcfile = self.config.get_file_path("chromium.desktop")
-                    destfile = os.path.join("/etc/xdg/autostart/")
-                    shutil.os.system('sudo cp "{}" "{}"'.format(srcfile, destfile))
-                    print("Copied chromium.desktop to /etc/xdg/autostart/")
-                else:
-                    print("chromium.desktop is already located in /etc/xdg/autostart/")
-            except Exception as e:
-                print(e)
-                return
-            return
-        elif name == "off":
-            print("Remove chromium.desktop from /etc/xdg/autostart/")
-            try:
-                if (
-                    os.path.exists(
-                        os.path.join("/etc/xdg/autostart/", "chromium.desktop")
-                    )
+                    os.path.exists(os.path.join("/etc/xdg/autostart/", "chromium.desktop"))
                     is True
                 ):
-                    shutil.os.system(
-                        'sudo rm -rf "{}"'.format(
-                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                    print(
+                        "CraftBeerPi Chromium Desktop is {}ON{}".format(
+                            Fore.LIGHTGREEN_EX, Style.RESET_ALL
                         )
                     )
-                    print("Deleted chromium.desktop from /etc/xdg/autostart/")
                 else:
-                    print("chromium.desktop is not located in /etc/xdg/autostart/")
-            except Exception as e:
-                print(e)
+                    print(
+                        "CraftBeerPi Chromium Desktop is {}OFF{}".format(
+                            Fore.RED, Style.RESET_ALL
+                        )
+                    )
+            elif name == "on":
+                print("Add chromium.desktop to /etc/xdg/autostart/")
+                try:
+                    if (
+                        os.path.exists(
+                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                        )
+                        is False
+                    ):
+                        srcfile = self.config.get_file_path("chromium.desktop")
+                        destfile = os.path.join("/etc/xdg/autostart/")
+                        shutil.os.system('sudo cp "{}" "{}"'.format(srcfile, destfile))
+                        print("Copied chromium.desktop to /etc/xdg/autostart/")
+                    else:
+                        print("chromium.desktop is already located in /etc/xdg/autostart/")
+                except Exception as e:
+                    print(e)
+                    return
                 return
-            return
+            elif name == "off":
+                print("Remove chromium.desktop from /etc/xdg/autostart/")
+                try:
+                    if (
+                        os.path.exists(
+                            os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                        )
+                        is True
+                    ):
+                        shutil.os.system(
+                            'sudo rm -rf "{}"'.format(
+                                os.path.join("/etc/xdg/autostart/", "chromium.desktop")
+                            )
+                        )
+                        print("Deleted chromium.desktop from /etc/xdg/autostart/")
+                    else:
+                        print("chromium.desktop is not located in /etc/xdg/autostart/")
+                except Exception as e:
+                    print(e)
+                    return
+                return
+        else:
+            user = pwd.getpwuid(os.getuid()).pw_name
+            file = "/home/" + user + "/.config/labwc/autostart"
+
+            if name == "status":
+                if os.path.exists(file) is False:
+                    print(
+                        "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                            Fore.RED, Style.RESET_ALL
+                        )
+                    )
+                    return
+                with open(file, "r") as f:
+                    lines = f.readlines()
+                    chromiumfound = False
+                    for line in lines:
+                        if line.find("chromium") != -1:
+                            chromiumfound = True
+                    if chromiumfound is True:
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                    else:
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )
+                    return
+                pass
+            elif name == "on":
+                print("Add chromium to labwc autostart")
+                try:
+                    if os.path.exists(file) is False:
+                        pathlib.Path(file).mkdir(parents=True, exist_ok=True)
+                        with open(file, "a") as f:
+                            f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                        print("Added chromium to labwc autostart")
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                    else:
+                        print("labwc autostart file already exists")
+                        with open(file, "r") as f:
+                            lines = f.readlines()
+                            chromiumfound = False
+                            for line in lines:
+                                if line.find("chromium") != -1:
+                                    chromiumfound = True
+                            if chromiumfound is True:
+                                print("chromium is already in the autostart file")
+                                print(
+                                "CraftBeerPi Chromium Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                                return
+                            else:
+                                with open(file, "a") as f:
+                                    f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                                print("Added chromium to labwc autostart")
+                                print(
+                                    "CraftBeerPi Chromium Autostart is {}ON{}".format(
+                                        Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                    )   
+                                )
+                except Exception as e:
+                    print(e)
+                    return
+            elif name == "off":
+                print("Remove chromium from labwc autostart")
+                try:
+                    if os.path.exists(file) is False:
+                        print("labwc autostart file does not exist")
+                        print(
+                                "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )                        
+                        return
+                    with open(file, "r") as f:
+                        lines = f.readlines()
+                    with open(file, "w") as f:
+                        for line in lines:
+                            if line.find("chromium") == -1:
+                                f.write(line)
+                    print("Removed chromium from labwc autostart")
+                    print(
+                                "CraftBeerPi Chromium Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )
+                except Exception as e:
+                    print(e)
+                    return        
+        
+
 
 
 @click.group()
@@ -414,7 +522,20 @@ def main(context, config_folder_path, logs_folder_path, debug_log_level):
         logger.warning(
             "log folder or log file could not be created or accessed. check folder and file permissions or create the logs folder somewhere you have access with a start option like '--log-folder-path=./logs'"
         )
-        logging.critical(e, exc_info=True)
+        try:
+            logger.warning(
+                "Trying to set rights for cbpi user on the log folder and file"
+            )
+            user = pwd.getpwuid(os.getuid()).pw_name
+            shutil.os.system(f'sudo chown -R {user}:{user} {logs_folder_path}')
+            handler = logging.handlers.RotatingFileHandler(
+                os.path.join(logs_folder_path, f"cbpi.log"), maxBytes=1000000, backupCount=3
+            )
+            logger.addHandler(handler)
+            handler.setFormatter(formatter)
+        except Exception as e:
+            logging.critical(e, exc_info=True)
+    
     cbpi_cli = CraftBeerPiCli(config)
     context.obj = cbpi_cli
 

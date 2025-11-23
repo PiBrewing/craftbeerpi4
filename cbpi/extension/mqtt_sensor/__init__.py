@@ -35,6 +35,7 @@ from cbpi.api.dataclasses import NotificationAction, NotificationType
         Property.Number(
             label="Timeout",
             configurable=True,
+            default_value=60,
             unit="sec",
             description="Timeout in seconds to send notification (default:60 | deactivated: 0)",
         ),
@@ -101,8 +102,8 @@ class MQTTSensor(CBPiSensor):
         pass
 
     async def on_message(self, message):
-        val = json.loads(message.payload.decode())
         try:
+            val = json.loads(message.payload.decode())
             if self.payload_text is not None:
                 for key in self.payload_text:
                     val = val.get(key, None)

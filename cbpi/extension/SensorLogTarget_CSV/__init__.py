@@ -3,6 +3,12 @@ import asyncio
 import base64
 import logging
 import os
+try:
+    import pwd
+    module_pwd = True
+except:
+    module_pwd = False
+import shutil
 import random
 from logging.handlers import RotatingFileHandler
 from unittest.mock import MagicMock, patch
@@ -43,11 +49,31 @@ class SensorLogTargetCSV(CBPiExtension):
             data_logger = logging.getLogger("cbpi.sensor.%s" % id)
             data_logger.propagate = False
             data_logger.setLevel(logging.DEBUG)
-            handler = RotatingFileHandler(
-                os.path.join(self.cbpi.log.logsFolderPath, f"sensor_{id}.log"),
-                maxBytes=max_bytes,
-                backupCount=backup_count,
-            )
+            try:
+                handler = RotatingFileHandler(
+                    os.path.join(self.cbpi.log.logsFolderPath, f"sensor_{id}.log"),
+                    maxBytes=max_bytes,
+                    backupCount=backup_count,
+                )
+            except Exception as e:
+                logger.error("Error creating log file handler: %s", e)
+                try:
+                    logger.warning(
+                        "Trying to set rights for cbpi user on the log folder and file"
+                        )
+                    user = pwd.getpwuid(os.getuid()).pw_name
+                    file= os.path.join(self.cbpi.log.logsFolderPath, f"sensor_{id}.log")
+                    shutil.os.system(f'sudo chown {user}:{user} {file}')
+
+                    handler = RotatingFileHandler(
+                        os.path.join(self.cbpi.log.logsFolderPath, f"sensor_{id}.log"),
+                        maxBytes=max_bytes,
+                        backupCount=backup_count,
+                    )
+                except Exception as e:
+                    logger.error("Error creating log file handler after trying to set rights: %s", e)
+                    return
+
             data_logger.addHandler(handler)
             self.cbpi.log.datalogger[id] = data_logger
 

@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import psutil
 
 from aiohttp import streamer, web
 from cbpi import __codename__, __version__
@@ -40,6 +41,8 @@ class SystemHttpEndpoints:
             spindledata = True
         else:
             spindledata = False
+        
+        mem = psutil.virtual_memory()
 
         return web.json_response(
             data=dict(
@@ -56,7 +59,11 @@ class SystemHttpEndpoints:
                 spindledata=spindledata,
                 guiversion=version,
                 codename=__codename__,
-            ),
+                system=dict(
+                    totalmem=round((int(mem.total) / (1024 * 1024)), 1),
+                    availablemem=round((int(mem.available) / (1024 * 1024)), 1),
+                    percentmem=round(float(mem.percent), 1),
+                )),
             dumps=json_dumps,
         )
 

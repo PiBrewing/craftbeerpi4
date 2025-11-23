@@ -9,6 +9,7 @@ from . import MQTTActor
         Property.Text(
             label="Payload",
             configurable=True,
+            default_value='',
             description="Payload that is sent as MQTT message. Available placeholders are {switch_onoff}: [on|off], {switch_10}: [1|0], {power}: [0-100].",
         ),
     ]
