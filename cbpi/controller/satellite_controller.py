@@ -4,6 +4,7 @@ import logging
 from contextlib import AsyncExitStack, asynccontextmanager
 from re import M
 
+import socket
 import shortuuid
 import aiomqtt
 from cbpi import __version__
@@ -43,6 +44,20 @@ class SatelliteController:
         return r
 
     async def init(self):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        closed=True
+        runs= 4
+        while closed:
+            try:
+                runs-=1
+                if runs<=0:
+                    logging.error("MQTT Broker not reachable, giving up.")
+                    return
+                sock.connect((self.host, self.port))
+                closed=False
+            except:
+                logging.warning("MQTT Broker not reachable, retrying ...")
+                await asyncio.sleep(1)
 
         self.client = aiomqtt.Client(
             self.host,
