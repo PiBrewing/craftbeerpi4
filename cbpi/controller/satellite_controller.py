@@ -3,6 +3,7 @@ import json
 import logging
 from contextlib import AsyncExitStack, asynccontextmanager
 from re import M
+import socket
 
 import shortuuid
 import aiomqtt
@@ -42,8 +43,20 @@ class SatelliteController:
         del r[key]
         return r
 
+    def is_port_open(self, host, port):
+        """Check if a specific port on a host is open."""
+        try:
+            with socket.create_connection((host, port), timeout=5):
+                return True
+        except (socket.timeout, socket.error):
+            return False
+
     async def init(self):
-      
+        # Check if the host and port are open before proceeding
+        if not self.is_port_open(self.host, self.port):
+            self.logger.error(f"Cannot connect to {self.host}:{self.port}. Ensure the host and port are accessible.")
+            return
+
         self.client = aiomqtt.Client(
             self.host,
             port=self.port,
