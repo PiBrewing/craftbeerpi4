@@ -3,6 +3,7 @@ Description=Craftbeer Pi
 
 [Service]
 WorkingDirectory=/home/{{ user }}
+ExecStartPre=/bin/sleep 5
 ExecStart={{ path }} start
 KillSignal=SIGKILL
 TimeoutStopSec=15
