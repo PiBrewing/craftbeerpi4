@@ -1,5 +1,6 @@
 [Unit]
 Description=Craftbeer Pi
+After=mosquitto.service influxdb.service
 
 [Service]
 WorkingDirectory=/home/{{ user }}
