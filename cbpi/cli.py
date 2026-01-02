@@ -51,22 +51,23 @@ class CraftBeerPiCli:
 
     def setup_one_wire(self):
         print("Setting up 1Wire")
-        with open("/boot/config.txt", "r") as f:
+        with open("/boot/firmware/config.txt", "r") as f:
             lines = f.readlines()
-        lines.append("dtoverlay=w1-gpio,gpiopin=4,pullup=on")
+        if "dtoverlay=w1-gpio,gpiopin=4,pullup=on\n" not in lines:    
+            lines.append("dtoverlay=w1-gpio,gpiopin=4,pullup=on\n")
 
         configtempfile = os.path.join(self.config.get_file_path(""), "config.txt")
 
         with open(configtempfile, "w") as f:
             for line in lines:
                 f.write(line)
-        destfile = "/boot/config.txt"
+        destfile = "/boot/firmware/config.txt"
 
         # copy and remove afterwards as mv will work, but raise an error message due to different file owners
         shutil.os.system('sudo cp "{}" "{}"'.format(configtempfile, destfile))
         shutil.os.system('rm -rf "{}"'.format(configtempfile))
 
-        print("/boot/config.txt created")
+        print("/boot/firmware/config.txt created")
 
     def list_one_wire(self):
         print("List 1Wire")
@@ -393,7 +394,7 @@ class CraftBeerPiCli:
                     if os.path.exists(file) is False:
                         pathlib.Path(file).mkdir(parents=True, exist_ok=True)
                         with open(file, "a") as f:
-                            f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                            f.write('chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000')
                         print("Added chromium to labwc autostart")
                         print(
                                 "CraftBeerPi Chromium Autostart is {}ON{}".format(
@@ -418,7 +419,7 @@ class CraftBeerPiCli:
                                 return
                             else:
                                 with open(file, "a") as f:
-                                    f.write('chromium = /usr/bin/chromium --start-fullscreen --start-maximized --password-store=basic --app=http://localhost:8000')
+                                    f.write('chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000')
                                 print("Added chromium to labwc autostart")
                                 print(
                                     "CraftBeerPi Chromium Autostart is {}ON{}".format(
