@@ -292,7 +292,7 @@ class CraftBeerPiCli:
                 return
             return
 
-    def chromium(self, name):
+    def chromium(self, name, width=None, height=None):
         try:
             version = int(distro.version())
         except:
@@ -390,11 +390,15 @@ class CraftBeerPiCli:
                 pass
             elif name == "on":
                 print("Add chromium to labwc autostart")
+                if width is not None and height is not None:
+                    command='chromium = /usr/bin/chromium  --start-maximized --start-fullscreen --window-size={},{} --password-store=basic --app=http://localhost:8000'.format(width, height)
+                else:
+                    command='chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000'
                 try:
                     if os.path.exists(file) is False:
                         pathlib.Path(file).mkdir(parents=True, exist_ok=True)
                         with open(file, "a") as f:
-                            f.write('chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000')
+                            f.write(command)
                         print("Added chromium to labwc autostart")
                         print(
                                 "CraftBeerPi Chromium Autostart is {}ON{}".format(
@@ -419,7 +423,7 @@ class CraftBeerPiCli:
                                 return
                             else:
                                 with open(file, "a") as f:
-                                    f.write('chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000')
+                                    f.write(command)
                                 print("Added chromium to labwc autostart")
                                 print(
                                     "CraftBeerPi Chromium Autostart is {}ON{}".format(
@@ -605,10 +609,17 @@ def autostart(context, name):
 @main.command()
 @click.pass_context
 @click.argument("name")
-def chromium(context, name):
+@click.option("--resolution", nargs=2, type=int, help="Optional for on:Set the chromium resolution for fullscreen mode (width height)")
+def chromium(context, name, resolution):
     """(on|off|status) Enable or disable Kiosk mode"""
     operationsystem = sys.platform
     if not operationsystem.startswith("win"):
-        context.obj.chromium(name)
+        if resolution is not None and name == "on":
+            width = resolution[0]
+            height = resolution[1]
+            print("Set screen resolution to {}x{}".format(width, height))
+            context.obj.chromium(name, width, height)
+        else:
+            context.obj.chromium(name)
     else:
         print("Chromium option NOT available under Windows")
