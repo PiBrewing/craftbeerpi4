@@ -1,5 +1,17 @@
 # Changelog
 
+## Server Version 4.7.1 (06.01.25):
+
+### Maintenance: 
+- Update required packages to latest versions.
+- Add optional resolution parameter to cli.py for chromium setup
+
+### Fixes:
+- Fix startup behavior with respect to mosquitto and influxdb.
+- Fix to install libsystemd-dev under github docker workflow (use ubuntu-22.04 instead of ubuntu-latest)
+- Adapt onewire setup -> change /boot/firmware/config.txt instead of /boot/config.txt
+
+
 ## Server Version 4.7.0 (23.11.25):
 ### Codename: Winter Bock
 

@@ -1,8 +1,10 @@
 [Unit]
 Description=Craftbeer Pi
+After=mosquitto.service influxdb.service
 
 [Service]
 WorkingDirectory=/home/{{ user }}
+ExecStartPre=/bin/sleep 5
 ExecStart={{ path }} start
 KillSignal=SIGKILL
 TimeoutStopSec=15

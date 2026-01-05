@@ -43,7 +43,7 @@ class SatelliteController:
         return r
 
     async def init(self):
-      
+
         self.client = aiomqtt.Client(
             self.host,
             port=self.port,
