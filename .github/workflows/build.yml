@@ -29,6 +29,9 @@ jobs:
       
       - name: Install packages
         run: sudo apt install -y libsystemd-dev
+      
+      - name: Install setuptools
+        run: pip3 install setuptools --upgrade  
 
       - name: Clean
         run: python setup.py clean --all
