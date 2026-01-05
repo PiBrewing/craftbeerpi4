@@ -13,7 +13,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     permissions:
       packages: write
     name: Builds the source distribution package
@@ -25,7 +25,7 @@ jobs:
       - name: Setup python environment
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       
       - name: Install packages
         run: sudo apt install -y libsystemd-dev
@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
     name: Builds the docker image(s)
     steps:
       - name: Checkout
