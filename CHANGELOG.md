@@ -8,7 +8,7 @@
 
 ### Fixes:
 - Fix startup behavior with respect to mosquitto and influxdb.
-- Fix to install libsystemd-dev under github docker workflow
+- Fix to install libsystemd-dev under github docker workflow (use ubuntu-22.04 instead of ubuntu-latest)
 - Adapt onewire setup -> change /boot/firmware/config.txt instead of /boot/config.txt
 
 
