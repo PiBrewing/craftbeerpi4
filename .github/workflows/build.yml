@@ -13,7 +13,7 @@ env:
 
 jobs:
   build:
-    runs-on: debian-latest
+    runs-on: ubuntu-22.04
     permissions:
       packages: write
     name: Builds the source distribution package
@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
 
   docker:
-    runs-on: debian-latest
+    runs-on: ubuntu-22.04
     name: Builds the docker image(s)
     steps:
       - name: Checkout
