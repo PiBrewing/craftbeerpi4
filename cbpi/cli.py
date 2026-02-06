@@ -292,6 +292,10 @@ class CraftBeerPiCli:
                 print(e)
                 return
             return
+        elif name not in ["on", "off", "status"]:
+            print("Usage: cbpi firefox (on|off|status)")
+            print("Example: cbpi firefox on")
+            return
         
     def firefox(self, name):
         """Enable or disable firefox fullscreen mode"""
@@ -381,6 +385,11 @@ class CraftBeerPiCli:
                                 with open(file, "a") as f:
                                     f.write(command)
                                 print("Added firefox to labwc autostart")
+                                print(
+                                    "CraftBeerPi Firefox Fullscreen Autostart is {}ON{}".format(
+                                        Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                    )   
+                                )
                 except Exception as e:
                     print(e)
                     return
