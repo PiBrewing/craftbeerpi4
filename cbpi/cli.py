@@ -353,7 +353,7 @@ class CraftBeerPiCli:
                 pass
             elif name == "on":
                 print("Add firefox to labwc autostart")
-                command='bash -c "sleep 20 && firefox --url http://localhost:8000 & wlrctl toplevel waitfor firefoox && wlrctl window focus firefox && wtype -P F11 -p F11"'
+                command='bash -c "sleep 20 && firefox --url http://localhost:8000 & wlrctl toplevel waitfor firefox && wlrctl window focus firefox && wtype -P F11 -p F11"'
                 try:
                     if os.path.exists(file) is False:
                         pathlib.Path(file).mkdir(parents=True, exist_ok=True)
