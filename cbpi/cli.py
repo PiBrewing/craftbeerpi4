@@ -21,6 +21,7 @@ import pathlib
 import pkgutil
 import platform
 import shutil
+from shutil import which
 import time
 from subprocess import call
 
@@ -291,6 +292,125 @@ class CraftBeerPiCli:
                 print(e)
                 return
             return
+        
+    def firefox(self, name):
+        """Enable or disable firefox fullscreen mode"""
+        wlrctl_available = True
+        wtype_available = True
+        if which("firefox") is None:
+            print("Firefox is not installed. Please install firefox to use this feature.")
+            return
+        if which("wlrctl") is None:
+            wlrctl_available = False
+        if which("wtype") is None:
+            wtype_available = False
+        if wlrctl_available is False or wtype_available is False:
+            print("wlrctl or wtype is not installed. Please install them to use this feature.")
+            print("Please run 'sudo apt install wlrctl wtype' to install them on Debian based systems")
+            return
+        try:
+            version = int(distro.version())
+        except:
+            version = 0
+
+        if version < 13:
+            print("Firefox fullscreen mode is only supported on Raspbian versions > 13 (trixie)")
+        else:
+            user = pwd.getpwuid(os.getuid()).pw_name
+            file = "/home/" + user + "/.config/labwc/autostart"
+
+            if name == "status":
+                if os.path.exists(file) is False:
+                    print(
+                        "CraftBeerPi Firefox Fullscreen Autostart is {}OFF{}".format(
+                            Fore.RED, Style.RESET_ALL
+                        )
+                    )
+                    return
+                with open(file, "r") as f:
+                    lines = f.readlines()
+                    firefoxfound = False
+                    for line in lines:
+                        if line.find("firefox") != -1:
+                            firefoxfound = True
+                    if firefoxfound is True:
+                        print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                    else:
+                        print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )
+                    return
+                pass
+            elif name == "on":
+                print("Add firefox to labwc autostart")
+                command='bash -c "sleep 20 && firefox --url http://localhost:8000 & wlrctl toplevel waitfor firefoox && wlrctl window focus firefox && wtype -P F11 -p F11"'
+                try:
+                    if os.path.exists(file) is False:
+                        pathlib.Path(file).mkdir(parents=True, exist_ok=True)
+                        with open(file, "a") as f:
+                            f.write(command)
+                        print("Added firefox to labwc autostart")
+                        print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                    else:
+                        print("labwc autostart file already exists")
+                        with open(file, "r") as f:
+                            lines = f.readlines()
+                            firefoxfound = False
+                            for line in lines:
+                                if line.find("firefox") != -1:
+                                    firefoxfound = True
+                            if firefoxfound is True:
+                                print("firefox is already in the autostart file")
+                                print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}ON{}".format(
+                                    Fore.LIGHTGREEN_EX, Style.RESET_ALL
+                                )
+                            )
+                                return
+                            else:
+                                with open(file, "a") as f:
+                                    f.write(command)
+                                print("Added firefox to labwc autostart")
+                except Exception as e:
+                    print(e)
+                    return
+            elif name == "off":
+                print("Remove firefox from labwc autostart")
+                try:
+                    if os.path.exists(file) is False:
+                        print("labwc autostart file does not exist")
+                        print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )                        
+                        return
+                    with open(file, "r") as f:
+                        lines = f.readlines()
+                    with open(file, "w") as f:
+                        for line in lines:
+                            if line.find("firefox") == -1:
+                                f.write(line)
+                    print("Removed firefox from labwc autostart")
+                    print(
+                                "CraftBeerPi Firefox Fullscreen Autostart is {}OFF{}".format(
+                                    Fore.RED, Style.RESET_ALL
+                                )
+                            )
+                except Exception as e:
+                    print(e)
+                    return
+    
 
     def chromium(self, name, width=None, height=None):
         try:
@@ -459,9 +579,6 @@ class CraftBeerPiCli:
                 except Exception as e:
                     print(e)
                     return        
-        
-
-
 
 @click.group()
 @click.pass_context
@@ -623,3 +740,14 @@ def chromium(context, name, resolution):
             context.obj.chromium(name)
     else:
         print("Chromium option NOT available under Windows")
+
+@main.command()
+@click.pass_context
+@click.argument("name")
+def firefox(context, name):
+    """(on|off|status) Enable or disable firefox fullscreen mode"""
+    operationsystem = sys.platform
+    if not operationsystem.startswith("win"):
+        context.obj.firefox(name)
+    else:
+        print("Firefox option NOT available under Windows")
