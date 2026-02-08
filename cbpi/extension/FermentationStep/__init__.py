@@ -274,8 +274,11 @@ class FermenterStep(CBPiFermentationStep):
             return StepResult.DONE
 
     async def on_timer_update(self, timer, seconds):
-        self.summary = Timer.format_time(seconds)
-        await self.push_update()
+        remaining_time = Timer.format_time(seconds)
+        if remaining_time[0:-3] != self.summary:
+            logging.info(remaining_time[0:-3])
+            self.summary = remaining_time[0:-3]
+            await self.push_update()
 
     async def on_start(self):
         self.shutdown = False
