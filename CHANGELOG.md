@@ -1,5 +1,25 @@
 # Changelog
 
+## Server Version 4.7.3 (08.02.26):
+### Codename: Winter Bock
+
+### Fixes:
+- create autostart file and not a folder if file does not exists for chromium or firefox autostart
+
+## Server Version 4.7.2 (06.02.26):
+### Codename: Winter Bock
+
+### Maintenance: 
+- update requirements
+
+### Fixes:
+- adapt autostart delay for mqtt connectivity
+- fix onewire setup vie cli
+- fix github workflow (add setuptools)
+
+### Features:
+- Add firefox autostart command for trixie
+
 ## Server Version 4.7.1 (06.01.25):
 
 ### Maintenance: 

@@ -356,7 +356,7 @@ class CraftBeerPiCli:
                 command='bash -c "sleep 20 && firefox --url http://localhost:8000 & wlrctl toplevel waitfor firefox && wlrctl window focus firefox && wtype -P F11 -p F11"'
                 try:
                     if os.path.exists(file) is False:
-                        pathlib.Path(file).mkdir(parents=True, exist_ok=True)
+                        Path(file).parent.mkdir(parents=True, exist_ok=True)
                         with open(file, "a") as f:
                             f.write(command)
                         print("Added firefox to labwc autostart")
@@ -525,7 +525,7 @@ class CraftBeerPiCli:
                     command='chromium = /usr/bin/chromium --start-maximized --start-fullscreen --password-store=basic --app=http://localhost:8000'
                 try:
                     if os.path.exists(file) is False:
-                        pathlib.Path(file).mkdir(parents=True, exist_ok=True)
+                        Path(file).parent.mkdir(parents=True, exist_ok=True)
                         with open(file, "a") as f:
                             f.write(command)
                         print("Added chromium to labwc autostart")
