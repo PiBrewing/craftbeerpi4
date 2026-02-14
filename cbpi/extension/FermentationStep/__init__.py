@@ -482,6 +482,7 @@ class FermenterRampTempStep(CBPiFermentationStep):
         return StepResult.DONE
 
     async def on_timer_update(self, timer, seconds):
+        logging.error("Timer update: {} seconds remaining".format(seconds))
         await self.push_update()
 
     async def on_start(self):
