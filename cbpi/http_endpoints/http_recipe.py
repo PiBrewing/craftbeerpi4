@@ -2,7 +2,7 @@ from aiohttp import web
 from cbpi.api import *
 from cbpi.api.dataclasses import Props, Step
 from cbpi.controller.recipe_controller import RecipeController
-
+import logging
 
 class RecipeHttpEndpoints:
 
@@ -15,7 +15,7 @@ class RecipeHttpEndpoints:
     async def http_get_all(self, request):
         """
         ---
-        description: Get all recipes
+        description: Get all recipes from the craftbeerpi recipe book
         tags:
         - Recipe
         responses:
@@ -28,13 +28,13 @@ class RecipeHttpEndpoints:
     async def get_by_name(self, request):
         """
         ---
-        description: Get all recipes
+        description: Get recipe by file name from the craftbeerpi recipe book
         tags:
         - Recipe
         parameters:
         - name: "name"
           in: "path"
-          description: "Recipe Name"
+          description: "Recipe File Name"
           required: true
           type: "string"
         responses:
@@ -48,16 +48,25 @@ class RecipeHttpEndpoints:
     async def http_create(self, request):
         """
         ---
-        description: Add Recipe
+        description: Add Recipe to the craftbeerpi recipe book
         tags:
         - Recipe
+        parameters:
+        - in: body
+          name: body
+          description: Create a new recipe with name
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
 
         responses:
             "200":
                 description: successful operation
         """
         data = await request.json()
-        # print(data)
         return web.json_response(
             dict(id=await self.controller.create(data.get("name")))
         )
@@ -89,23 +98,22 @@ class RecipeHttpEndpoints:
         data = await request.json()
         name = request.match_info["name"]
         await self.controller.save(name, data)
-        # print(data)
+        logging.error(data)
         return web.Response(status=204)
 
     @request_mapping(path="/{name}", method="DELETE", auth_required=False)
     async def http_remove(self, request):
         """
         ---
-        description: Delete
+        description: Delete Recipe with given file name from the craftbeerpi recipe book
         tags:
         - Recipe
         parameters:
         - name: "id"
           in: "path"
-          description: "Recipe Id"
+          description: "Recipe File Name"
           required: true
           type: "string"
-
 
         responses:
             "200":
@@ -113,19 +121,19 @@ class RecipeHttpEndpoints:
         """
         name = request.match_info["name"]
         await self.controller.remove(name)
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/{name}/brew", method="POST", auth_required=False)
     async def http_brew(self, request):
         """
         ---
-        description: Brew
+        description: Brew recipe with given file name from the craftbeerpi recipe book
         tags:
         - Recipe
         parameters:
         - name: "name"
           in: "path"
-          description: "Recipe Id"
+          description: "Recipe File Name"
           required: true
           type: "string"
 
@@ -136,7 +144,7 @@ class RecipeHttpEndpoints:
         """
         name = request.match_info["name"]
         await self.controller.brew(name)
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/{id}/clone", method="POST", auth_required=False)
     async def http_clone(self, request):
@@ -148,15 +156,23 @@ class RecipeHttpEndpoints:
         parameters:
         - name: "id"
           in: "path"
-          description: "Recipe Id"
+          description: "Recipe Filename"
           required: true
           type: "string"
+          example: 
+            id: "EKCnCHwKgPkaEiK4s2aXh3"
         - in: body
           name: body
           description: Recipe Data
           required: false
           schema:
             type: object
+            properties:
+              name:
+                type: string
+            example:
+              name: "My Cloned Recipe"
+
         responses:
             "200":
                 description: successful operation

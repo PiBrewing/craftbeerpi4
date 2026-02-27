@@ -33,13 +33,15 @@ class NotificationHttpEndpoints:
         responses:
             "200":
                 description: successful operation
+            "400":
+                description: failed operation
         """
 
         notification_id = request.match_info["id"]
         action_id = request.match_info["action_id"]
         # print(notification_id, action_id)
-        self.cbpi.notification.notify_callback(notification_id, action_id)
-        return web.Response(status=200)
+        success = self.cbpi.notification.notify_callback(notification_id, action_id)
+        return web.Response(status=200 if success else 400)
 
     @request_mapping("/delete", method="POST", auth_required=False)
     async def restart(self, request):

@@ -357,15 +357,6 @@ class StepController:
             )
             logging.error("Failed to start step %s" % step)
 
-    async def save_basic(self, data):
-        logging.info("SAVE Basic Data")
-        self.basic_data = {
-            **self.basic_data,
-            **data,
-        }
-        await self.save()
-        self.push_udpate()
-
     async def call_action(self, id, action, parameter) -> None:
         logging.info("Step Controller - call all Action {} {}".format(id, action))
         try:

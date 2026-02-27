@@ -19,7 +19,7 @@ class SensorHttpEndpoints:
         """
 
         ---
-        description: Switch actor on
+        description: Get all Sensors
         tags:
         - Sensor
         responses:
@@ -32,13 +32,13 @@ class SensorHttpEndpoints:
     async def http_add(self, request):
         """
         ---
-        description: add one Actor
+        description: Add one Sensor
         tags:
         - Sensor
         parameters:
         - in: body
           name: body
-          description: Created an actor
+          description: Create a sensor
           required: true
 
           schema:
@@ -52,12 +52,12 @@ class SensorHttpEndpoints:
               props:
                 type: object
             example:
-              name: "Actor 1"
-              type: "CustomActor"
+              name: "Sensor"
+              type: "CustomSensor"
               props: {}
 
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         data = await request.json()
@@ -74,19 +74,18 @@ class SensorHttpEndpoints:
     async def http_update(self, request):
         """
         ---
-        description: Update an actor
+        description: Update a sensor with given id
         tags:
         - Sensor
         parameters:
         - name: "id"
           in: "path"
-          description: "Actor ID"
+          description: "Sensor ID"
           required: true
-          type: "integer"
-          format: "int64"
+          type: "string"
         - in: body
           name: body
-          description: Update an actor
+          description: Update a sensor with given id
           required: false
           schema:
             type: object
@@ -95,8 +94,15 @@ class SensorHttpEndpoints:
                 type: string
               type:
                 type: string
-              config:
-                props: object
+              props:
+                type: object
+            example:
+                name: "Raumtemperatur"
+                type: "OneWire"
+                props: 
+                    Sensor: "28-3c01d60748af"
+                    Interval: "10"
+                    offset: "0"
         responses:
             "200":
                 description: successful operation
@@ -115,72 +121,22 @@ class SensorHttpEndpoints:
     async def http_delete_one(self, request):
         """
         ---
-        description: Delete an actor
+        description: Delete a sensor with given id
         tags:
         - Sensor
         parameters:
         - name: "id"
           in: "path"
-          description: "Actor ID"
+          description: "Sensor ID"
           required: true
           type: "string"
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         id = request.match_info["id"]
         await self.controller.delete(id)
-        return web.Response(status=204)
-
-    @request_mapping(path="/{id}/on", method="POST", auth_required=False)
-    async def http_on(self, request) -> web.Response:
-        """
-
-        ---
-        description: Switch actor on
-        tags:
-        - Sensor
-        parameters:
-        - name: "id"
-          in: "path"
-          description: "Actor ID"
-          required: true
-          type: "string"
-
-        responses:
-            "204":
-                description: successful operation
-            "405":
-                description: invalid HTTP Met
-        """
-        id = request.match_info["id"]
-        await self.controller.on(id)
-        return web.Response(status=204)
-
-    @request_mapping(path="/{id}/off", method="POST", auth_required=False)
-    async def http_off(self, request) -> web.Response:
-        """
-
-        ---
-        description: Switch actor on
-        tags:
-        - Sensor
-        parameters:
-        - name: "id"
-          in: "path"
-          description: "Actor ID"
-          required: true
-          type: "string"
-
-        responses:
-            "204":
-                description: successful operation
-            "405":
-                description: invalid HTTP Met
-        """
-        id = request.match_info["id"]
-        await self.controller.off(id)
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/{id}", method="GET", auth_required=False)
     async def get_value(self, request):
@@ -224,19 +180,22 @@ class SensorHttpEndpoints:
           schema:
             type: object
             properties:
-              name:
+              action:
                 type: string
               parameter:
                 type: object
+            example:
+              action: "set"
+              parameter:
+                time: "5"
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         sensor_id = request.match_info["id"]
         data = await request.json()
-        # print(data)
         await self.controller.call_action(
             sensor_id, data.get("action"), data.get("parameter")
         )
 
-        return web.Response(status=204)
+        return web.Response(status=200)
