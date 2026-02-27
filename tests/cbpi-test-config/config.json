@@ -202,7 +202,7 @@
         "options": null,
         "source": "hidden",
         "type": "string",
-        "value": "4.4.3"
+        "value": "4.7.4.a3"
     },
     "CSVLOGFILES": {
         "description": "Write sensor data to csv logfiles (enabling requires restart)",
@@ -302,6 +302,14 @@
         "source": "steps",
         "type": "kettle",
         "value": ""
+    },
+    "MIN_MEMORY": {
+        "description": "Minimum required memory in MB for CraftBeerPi to run properly",
+        "name": "MIN_MEMORY",
+        "options": null,
+        "source": "craftbeerpi",
+        "type": "number",
+        "value": 200
     },
     "MQTTUpdate": {
         "description": "Forced MQTT Update frequency in s for Kettle and Fermenter (no changes in payload required). Restart required after change",
@@ -432,6 +440,22 @@
         "type": "string",
         "value": ""
     },
+    "alarmlow": {
+        "description": "Low alarm value for iSpindle",
+        "name": "alarmlow",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "number",
+        "value": 0
+    },
+    "alarmsvg": {
+        "description": "Attenuation alarm value for iSpindle",
+        "name": "alarmsvg",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "number",
+        "value": 100
+    },
     "brewfather_api_key": {
         "description": "Brewfather API Key",
         "name": "brewfather_api_key",
@@ -439,6 +463,23 @@
         "source": "craftbeerpi",
         "type": "string",
         "value": ""
+    },
+    "brewfather_enable": {
+        "description": "Enable Brewfather data transfer",
+        "name": "brewfather_enable",
+        "options": [
+            {
+                "label": "No",
+                "value": "No"
+            },
+            {
+                "label": "Yes",
+                "value": "Yes"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "No"
     },
     "brewfather_list_length": {
         "description": "Brewfather Recipe List length",
@@ -477,6 +518,71 @@
         "type": "string",
         "value": ""
     },
+    "brewfatheraddr": {
+        "description": "Brewfather address",
+        "name": "brewfatheraddr",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "brewfatherport": {
+        "description": "Brewfather port",
+        "name": "brewfatherport",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "number",
+        "value": ""
+    },
+    "brewfathersuffix": {
+        "description": "Brewfather suffix",
+        "name": "brewfathersuffix",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "brewfathertoken": {
+        "description": "Brewfather token",
+        "name": "brewfathertoken",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "brewpiless_addr": {
+        "description": "Brewpiless Server address (IP:PORT) Port only if not 80",
+        "name": "brewpiless_addr",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "brewpiless_enable": {
+        "description": "Enable Brewpiless data transfer",
+        "name": "brewpiless_enable",
+        "options": [
+            {
+                "label": "No",
+                "value": "No"
+            },
+            {
+                "label": "Yes",
+                "value": "Yes"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "No"
+    },
+    "cbpi4-iSpindle_update": {
+        "description": "iSpindle Version Update",
+        "name": "cbpi4-iSpindle_update",
+        "options": null,
+        "source": "hidden",
+        "type": "string",
+        "value": "1.0.3"
+    },
     "cbpi4-system_update": {
         "description": "cbpi4 system version update",
         "name": "cbpi4-system_update",
@@ -500,6 +606,111 @@
         "source": "hidden",
         "type": "number",
         "value": 5
+    },
+    "dailyalarm": {
+        "description": "Time for daily Spindle alarm",
+        "name": "dailyalarm",
+        "options": [
+            {
+                "label": "0",
+                "value": 0
+            },
+            {
+                "label": "1",
+                "value": 1
+            },
+            {
+                "label": "2",
+                "value": 2
+            },
+            {
+                "label": "3",
+                "value": 3
+            },
+            {
+                "label": "4",
+                "value": 4
+            },
+            {
+                "label": "5",
+                "value": 5
+            },
+            {
+                "label": "6",
+                "value": 6
+            },
+            {
+                "label": "7",
+                "value": 7
+            },
+            {
+                "label": "8",
+                "value": 8
+            },
+            {
+                "label": "9",
+                "value": 9
+            },
+            {
+                "label": "10",
+                "value": 10
+            },
+            {
+                "label": "11",
+                "value": 11
+            },
+            {
+                "label": "12",
+                "value": 12
+            },
+            {
+                "label": "13",
+                "value": 13
+            },
+            {
+                "label": "14",
+                "value": 14
+            },
+            {
+                "label": "15",
+                "value": 15
+            },
+            {
+                "label": "16",
+                "value": 16
+            },
+            {
+                "label": "17",
+                "value": 17
+            },
+            {
+                "label": "18",
+                "value": 18
+            },
+            {
+                "label": "19",
+                "value": 19
+            },
+            {
+                "label": "20",
+                "value": 20
+            },
+            {
+                "label": "21",
+                "value": 21
+            },
+            {
+                "label": "22",
+                "value": 22
+            },
+            {
+                "label": "23",
+                "value": 23
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "0"
     },
     "max_dashboard_number": {
         "description": "Max Number of Dashboards",
@@ -567,6 +778,114 @@
         "type": "select",
         "value": "Yes"
     },
+    "spindle_SQL": {
+        "description": "Enable transfer of Spindle data to SQL database",
+        "name": "spindle_SQL",
+        "options": [
+            {
+                "label": "No",
+                "value": "No"
+            },
+            {
+                "label": "Yes",
+                "value": "Yes"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "No"
+    },
+    "spindle_SQL_DB": {
+        "description": "SQL database name",
+        "name": "spindle_SQL_DB",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "spindle_SQL_HOST": {
+        "description": "SQL database host. e.g: localhost or IP address",
+        "name": "spindle_SQL_HOST",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "spindle_SQL_PASSWORD": {
+        "description": "SQL database password",
+        "name": "spindle_SQL_PASSWORD",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "spindle_SQL_PORT": {
+        "description": "SQL database port number",
+        "name": "spindle_SQL_PORT",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "number",
+        "value": ""
+    },
+    "spindle_SQL_USER": {
+        "description": "SQL database user name",
+        "name": "spindle_SQL_USER",
+        "options": null,
+        "source": "cbpi4-iSpindle",
+        "type": "string",
+        "value": ""
+    },
+    "spindledata": {
+        "description": "Enable extra page for spindledata in ui",
+        "name": "spindledata",
+        "options": [
+            {
+                "label": "No",
+                "value": "No"
+            },
+            {
+                "label": "Yes",
+                "value": "Yes"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "No"
+    },
+    "spindleunit": {
+        "description": "Define Unit for your SPindles (Plato or SG)",
+        "name": "spindleunit",
+        "options": [
+            {
+                "label": "PLATO",
+                "value": "PLATO"
+            },
+            {
+                "label": "SG",
+                "value": "SG"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "PLATO"
+    },
+    "statusupdate": {
+        "description": "Send daily status update from active iSpindle",
+        "name": "statusupdate",
+        "options": [
+            {
+                "label": "No",
+                "value": "No"
+            },
+            {
+                "label": "Yes",
+                "value": "Yes"
+            }
+        ],
+        "source": "cbpi4-iSpindle",
+        "type": "select",
+        "value": "No"
+    },
     "steps_boil": {
         "description": "Boil step type",
         "name": "steps_boil",
@@ -574,6 +893,14 @@
         "source": "steps",
         "type": "step",
         "value": "BoilStep"
+    },
+    "steps_boil_actor": {
+        "description": "Actor that can be toggled with lid alert to activate exhaust or steam condensor (default: None)",
+        "name": "steps_boil_actor",
+        "options": null,
+        "source": "steps",
+        "type": "actor",
+        "value": ""
     },
     "steps_boil_temp": {
         "description": "Default Boil Temperature for Recipe Creation",

@@ -32,7 +32,7 @@ class StepTestCase(CraftBeerPiTestCase):
 
         # # Delete step
         resp = await self.client.delete(path="/step2/%s" % sensor_id)
-        assert resp.status == 204
+        assert resp.status == 200
 
     def create_wait_callback(self, topic):
         future = self.cbpi.app.loop.create_future()

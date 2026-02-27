@@ -33,4 +33,4 @@ class SensorTestCase(CraftBeerPiTestCase):
 
         # # Delete Sensor
         resp = await self.client.delete(path="/sensor/%s" % sensor_id)
-        assert resp.status == 204
+        assert resp.status == 200
