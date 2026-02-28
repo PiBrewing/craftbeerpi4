@@ -44,7 +44,7 @@ class SatelliteController:
 
     async def init(self):
 
-        self.client = aiomqtt.Client(
+        self.client = aiomqtt.Client(          
             self.host,
             port=self.port,
             username=self.username,

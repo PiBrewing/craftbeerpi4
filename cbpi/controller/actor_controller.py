@@ -47,9 +47,10 @@ class ActorController(BasicController):
             else:
                 await self.set_power(id, power)
                 await self.set_output(id, output)
-
+            return True
         except Exception as e:
             logging.error("Failed to switch on Actor {} {}".format(id, e))
+            return False
 
     async def off(self, id):
         try:
@@ -65,8 +66,10 @@ class ActorController(BasicController):
                     self.sorting,
                 )
                 self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict())
+            return True
         except Exception as e:
             logging.error("Failed to switch on Actor {} {}".format(id, e), True)
+            return False
 
     async def toogle(self, id):
         try:
@@ -145,7 +148,6 @@ class ActorController(BasicController):
 
     async def ws_actor_update(self):
         try:
-            # await self.push_udpate()
             self.cbpi.ws.send(
                 dict(
                     topic=self.update_key,
@@ -153,6 +155,7 @@ class ActorController(BasicController):
                 ),
                 self.sorting,
             )
-        #            self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict())
+            return True
         except Exception as e:
             logging.error("Failed to update Actors {}".format(e))
+            return False

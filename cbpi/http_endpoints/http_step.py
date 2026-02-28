@@ -28,7 +28,7 @@ class StepHttpEndpoints:
     async def http_get_all(self, request):
         """
         ---
-        description: Get all steps
+        description: Get all steps from active brewing recipe
         tags:
         - Step
         responses:
@@ -42,17 +42,32 @@ class StepHttpEndpoints:
         """
 
         ---
-        description: Add
+        description: Add new step to the end of the active brewing recipe
         tags:
         - Step
         parameters:
-
         - in: body
           name: body
-          description: Created an step
+          description: Create a new step
           required: true
           schema:
             type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              props:
+                type: object
+            example:
+                name: "Mashstep"
+                type: "MashStep"
+                props:
+                    Timer: "30"
+                    Temp: "73"
+                    Sensor: "2Sn46Fc6jRGvES9MuQXHdG"
+                    AutoMode: "Yes"
+                    Kettle: "PkVY88NrEX4VYg4H2tY4Ae"
         responses:
             "200":
                 description: successful operation
@@ -71,16 +86,37 @@ class StepHttpEndpoints:
     async def http_update(self, request):
         """
         ---
-        description: Update
+        description: Update existing MashStep with given id
         tags:
         - Step
         parameters:
+        - name: "id"
+          in: "path"
+          description: "Existing Step id"
+          required: true
+          type: "string"
         - in: body
           name: body
-          description: Created an kettle
-          required: false
+          description: Update Mashstep with existing id
+          required: true
           schema:
             type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              props:
+                type: object
+            example:
+                name: "Mashstep"
+                type: "MashStep"
+                props:
+                    Timer: "30"
+                    Temp: "73"
+                    Sensor: "2Sn46Fc6jRGvES9MuQXHdG"
+                    AutoMode: "Yes"
+                    Kettle: "PkVY88NrEX4VYg4H2tY4Ae"
         responses:
             "200":
                 description: successful operation
@@ -98,45 +134,51 @@ class StepHttpEndpoints:
         """
 
         ---
-        description: Delete
+        description: Delete existing MashStep with given id
         tags:
         - Step
+        parameters:
+        - name: "id"
+          in: "path"
+          description: "Existing Step id"
+          required: true
+          type: "string"
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         id = request.match_info["id"]
         await self.controller.delete(id)
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/next", method="POST", auth_required=False)
     async def http_next(self, request):
         """
 
         ---
-        description: Next
+        description: Move to the next brewing step
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
 
         await self.controller.next()
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/move", method="PUT", auth_required=False)
     async def http_move(self, request):
         """
         ---
-        description: Move
+        description: Move step with given id in given direction (1 for down, -1 for up)
         tags:
         - Step
         parameters:
         - in: body
           name: body
-          description: Created an kettle
-          required: false
+          description: Move step with given id in given direction (1 for down, -1 for up)
+          required: true
           schema:
             type: object
             properties:
@@ -145,78 +187,64 @@ class StepHttpEndpoints:
               direction:
                 type: "integer"
                 format: "int64"
+            example:
+                id: "RAuQR8UgWLueQtfXrWxShb"
+                direction: -1
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         data = await request.json()
         await self.controller.move(data["id"], data["direction"])
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/start", method="POST", auth_required=False)
     async def http_start(self, request):
         """
+
         ---
-        description: Move
+        description: Start the brewing process / step
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
 
         await self.controller.start()
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/stop", method="POST", auth_required=False)
     async def http_stop(self, request):
         """
 
         ---
-        description: Stop Step
+        description: Stop the brewing process / step
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
 
         await self.controller.stop()
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/reset", method="POST", auth_required=False)
     async def http_reset(self, request):
         """
 
         ---
-        description: Move
+        description: Reset the brewing process / steps
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
 
         await self.controller.reset_all()
-
-        return web.Response(status=204)
-
-    @request_mapping(path="/basic", method="PUT", auth_required=False)
-    async def http_save_basic(self, request):
-        """
-
-        ---
-        description: Move
-        tags:
-        - Step
-        responses:
-            "204":
-                description: successful operation
-        """
-        data = await request.json()
-        await self.controller.save_basic(data)
-
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/action/{id}", method="POST", auth_required=False)
     async def http_call_action(self, request):
@@ -246,7 +274,7 @@ class StepHttpEndpoints:
                 items:
                     type: string
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         data = await request.json()
@@ -255,23 +283,23 @@ class StepHttpEndpoints:
         await self.controller.call_action(
             id, data.get("action"), data.get("parameter", [])
         )
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/clear", method="POST", auth_required=False)
     async def http_clear(self, request):
         """
 
         ---
-        description: Clear ALll
+        description: Clear All Steps from active brewing recipe
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
 
         await self.controller.clear()
-        return web.Response(status=204)
+        return web.Response(status=200)
 
     @request_mapping(path="/savetobook", method="POST", auth_required=False)
     async def http_savetobook(self, request):
@@ -282,8 +310,8 @@ class StepHttpEndpoints:
         tags:
         - Step
         responses:
-            "204":
+            "200":
                 description: successful operation
         """
         await self.controller.savetobook()
-        return web.Response(status=204)
+        return web.Response(status=200)

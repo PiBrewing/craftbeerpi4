@@ -89,29 +89,21 @@ class SystemHttpEndpoints:
     @request_mapping(
         "/events", method="GET", name="get_all_events", auth_required=False
     )
-    def get_all_events(self, request):
+    async def get_all_events(self, request):
         """
         ---
-        description: Get list of all registered events
+        description: Get all events in the event bus
         tags:
         - System
         responses:
             "200":
                 description: successful operation
         """
-        return web.json_response(data=self.cbpi.bus.dump())
+        data = self.cbpi.bus.dump()
+        return web.json_response(data=data)
 
     @request_mapping("/jobs", method="GET", name="get_jobs", auth_required=False)
-    def get_all_jobs(self, request):
-        """
-        ---
-        description: Get all running Jobs
-        tags:
-        - System
-        responses:
-            "200":
-                description: successful operation
-        """
+    async def get_all_jobs(self, request):
         scheduler = get_scheduler_from_app(self.cbpi.app)
         result = []
         for j in scheduler:
@@ -245,6 +237,12 @@ class SystemHttpEndpoints:
         description: Restore Config
         tags:
         - System
+        parameters:
+        - name: "File"
+          in: "formData"
+          description: "Config data to restore"
+          required: true
+          type: "file"
         responses:
             "200":
                 description: successful operation
@@ -278,6 +276,12 @@ class SystemHttpEndpoints:
         description: Upload SVG file to widgets folder
         tags:
         - System
+        parameters:
+        - name: "File"
+          in: "formData"
+          description: "SVG file to upload"
+          required: true
+          type: "file"
         responses:
             "200":
                 description: successful operation

@@ -2,6 +2,7 @@
     "data": [
         {
             "id": "3CUJte4bkxDMFCtLX8eqsX",
+            "maxoutput": 100,
             "name": "SomeActor",
             "output": 100,
             "power": 100,

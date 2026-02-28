@@ -58,8 +58,6 @@ class NotificationController:
                     )
             except Exception as e:
                 pass
-            finally:
-                return True
         return True
 
     def get_state(self):
@@ -162,5 +160,8 @@ class NotificationController:
                 background_tasks.add(task)
                 task.add_done_callback(background_tasks.discard)
             del self.callback_cache[notification_id]
+            return True
         except Exception as e:
             self.logger.error("Failed to call notification callback")
+            return False    
+

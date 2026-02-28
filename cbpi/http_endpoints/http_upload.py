@@ -15,7 +15,22 @@ class UploadHttpEndpoints:
 
     @request_mapping(path="/", method="POST", auth_required=False)
     async def FileUpload(self, request):
+        """
+        description: FileUpload 
+        tags:
+        - Upload
+        parameters:
+        - in: formData
+          name: File
+          type: file
+          description: Recipe file to upload.
+
+        responses:
+            "200":
+                description: successful operation
+        """
         data = await request.post()
+        logging.error("Received file upload request with data: {}".format(data))
         await self.controller.FileUpload(data)
         return web.Response(status=200)
 
