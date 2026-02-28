@@ -1,5 +1,11 @@
 # Changelog
 
+## Server Version 4.7.4 (28.02.26):
+### Codename: Winter Bock
+
+### Maintenance:
+- Upgrade to cryptography 46.0.5 to address dependabot alert
+
 ## Server Version 4.7.3 (08.02.26):
 ### Codename: Winter Bock
 
