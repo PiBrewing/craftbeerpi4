@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import importlib
 import json
@@ -297,6 +298,31 @@ class SystemController:
 
     async def systeminfo(self):
         logging.info("SYSTEMINFO")
+        TEMP_UNIT = self.cbpi.config.get("TEMP_UNIT", "C")
+        # blocking calls (sysfs reads, iwlist): keep them off the event loop, which
+        # also runs the kettle/fermenter logics and the sensors
+        return await asyncio.to_thread(self._systeminfo, TEMP_UNIT)
+
+    @staticmethod
+    def _cpu_temperature(fahrenheit):
+        """
+        CPU temperature from the cpu_thermal hwmon only. psutil.sensors_temperatures()
+        reads every hwmon device, 1-wire probes included (w1_slave_temp): about 4 s
+        per probe, 19 s with 5 probes on a Raspberry Pi.
+        """
+        for hwmon in glob.glob("/sys/class/hwmon/hwmon*"):
+            try:
+                with open(os.path.join(hwmon, "name")) as f:
+                    if f.read().strip() != "cpu_thermal":
+                        continue
+                with open(os.path.join(hwmon, "temp1_input")) as f:
+                    celsius = int(f.read().strip()) / 1000
+            except (OSError, ValueError):
+                continue
+            return round(celsius * 9 / 5 + 32 if fahrenheit else celsius, 1)
+        return 0
+
+    def _systeminfo(self, TEMP_UNIT):
         system = ""
         temp = 0
         cpuload = 0
@@ -310,7 +336,6 @@ class SystemController:
         eth0speed = "N/A"
         wlan0speed = "N/A"
 
-        TEMP_UNIT = self.cbpi.config.get("TEMP_UNIT", "C")
         FAHRENHEIT = False if TEMP_UNIT == "C" else True
 
         af_map = {
@@ -333,14 +358,7 @@ class SystemController:
             mempercent = round(float(mem.percent), 1)
             totalmem = round((int(mem.total) / (1024 * 1024)), 1)
             if system == "Linux":
-                try:
-                    temps = psutil.sensors_temperatures(fahrenheit=FAHRENHEIT)
-                    for name, entries in temps.items():
-                        for entry in entries:
-                            if name == "cpu_thermal":
-                                temp = round(float(entry.current), 1)
-                except:
-                    pass
+                temp = self._cpu_temperature(FAHRENHEIT)
             else:
                 temp = "N/A"
             if system == "Linux":
