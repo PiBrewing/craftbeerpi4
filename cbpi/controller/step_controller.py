@@ -12,6 +12,7 @@ import shortuuid
 import yaml
 from cbpi.api.dataclasses import (NotificationAction, NotificationType, Props,
                                   Step)
+from cbpi.utils.utils import set_aside_corrupt_file, write_json_atomic
 from tabulate import tabulate
 
 from ..api.step import StepMove, StepResult, StepState
@@ -55,42 +56,29 @@ class StepController:
         # create file if not exists
         if os.path.exists(self.path) is False:
             logging.warning("Missing step_data.json file. INIT empty file")
-            with open(self.path, "w") as file:
-                json.dump(dict(basic={}, steps=[]), file, indent=4, sort_keys=True)
+            write_json_atomic(self.path, dict(basic={}, steps=[]))
 
-        # load from json file
+        # load from json file - a file that cannot be loaded is set aside
+        # instead of deleted, and cbpi starts with empty data
         try:
             with open(self.path) as json_file:
                 data = json.load(json_file)
-                self.basic_data = data["basic"]
-                self.profile = data["steps"]
+            basic_data = data["basic"]
+            profile = list(map(lambda item: self.create(item), data["steps"]))
+        except Exception as e:
+            if set_aside_corrupt_file(self.cbpi, self.path, e) is not None:
+                write_json_atomic(self.path, dict(basic={"name": ""}, steps=[]))
+            basic_data = {"name": ""}
+            profile = []
 
-            # Start step after start up
-            self.profile = list(map(lambda item: self.create(item), self.profile))
-            if startActive is True:
-                active_step = self.find_by_status("A")
-                if active_step is not None:
-                    asyncio.create_task(self.start_step(active_step))
+        self.basic_data = basic_data
+        self.profile = profile
 
-        except:
-            logging.warning("Invalid step_data.json file - Creating empty file")
-            os.remove(self.path)
-            with open(self.path, "w") as file:
-                json.dump(
-                    dict(basic={"name": ""}, steps=[]), file, indent=4, sort_keys=True
-                )
-
-            with open(self.path) as json_file:
-                data = json.load(json_file)
-                self.basic_data = data["basic"]
-                self.profile = data["steps"]
-
-            # Start step after start up
-            self.profile = list(map(lambda item: self.create(item), self.profile))
-            if startActive is True:
-                active_step = self.find_by_status("A")
-                if active_step is not None:
-                    asyncio.create_task(self.start_step(active_step))
+        # Start step after start up
+        if startActive is True:
+            active_step = self.find_by_status("A")
+            if active_step is not None:
+                asyncio.create_task(self.start_step(active_step))
 
     async def add(self, item: Step):
         logging.debug("Add step")
@@ -130,8 +118,7 @@ class StepController:
             basic=self.basic_data,
             steps=list(map(lambda item: item.to_dict(), self.profile)),
         )
-        with open(self.path, "w") as file:
-            json.dump(data, file, indent=4, sort_keys=True)
+        write_json_atomic(self.path, data)
         self.push_udpate()
 
     async def start(self):
@@ -380,8 +367,7 @@ class StepController:
             item["id"] = shortuuid.uuid()
 
         list(map(lambda item: add_runtime_data(item), data.get("steps")))
-        with open(self.path, "w") as file:
-            json.dump(data, file, indent=4, sort_keys=True)
+        write_json_atomic(self.path, data)
         self.load()
         self.push_udpate(complete=True)
 
@@ -392,8 +378,7 @@ class StepController:
             pass
 
         data = dict(basic=dict(), steps=[])
-        with open(self.path, "w") as file:
-            json.dump(data, file, indent=4, sort_keys=True)
+        write_json_atomic(self.path, data)
 
         self.load()
         self.push_udpate(complete=True)
