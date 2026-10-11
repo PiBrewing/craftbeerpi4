@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import aiohttp
 from aiohttp import web
+from cbpi.eventlog import EventLog
 from cbpi.utils import json_dumps
 from voluptuous import Schema
 
@@ -14,7 +15,14 @@ class CBPiWebSocket:
         self._callbacks = defaultdict(set)
         self._clients = weakref.WeakSet()
         self.logger = logging.getLogger(__name__)
-        self.cbpi.app.add_routes([web.get("/ws", self.websocket_handler)])
+        # GUI transport over plain HTTP (long-polling), alongside the websocket
+        self.events = EventLog()
+        self.cbpi.app.add_routes(
+            [
+                web.get("/ws", self.websocket_handler),
+                web.get("/events", self.events.handler),
+            ]
+        )
         self.cbpi.bus.register_object(self)
 
         # if self.cbpi.config.static.get("ws_push_all", False):
@@ -23,19 +31,24 @@ class CBPiWebSocket:
     async def listen(self, topic, **kwargs):
         data = dict(topic=topic, data=dict(**kwargs))
         self.logger.debug("PUSH %s " % data)
-        self.send(data)
+        # bus events stay websocket-only: the GUI uses none of them
+        self._broadcast(data)
 
     def send(self, data, sorting=False):
+        if sorting:
+            try:
+                data["data"].sort(key=lambda x: x.get("name").upper())
+            except:
+                pass
+        self.events.append(data)
+        self._broadcast(data)
+
+    def _broadcast(self, data):
         self.logger.debug("broadcast to ws clients. Data: %s" % data)
         for ws in self._clients:
 
             async def send_data(ws, data):
                 try:
-                    if sorting:
-                        try:
-                            data["data"].sort(key=lambda x: x.get("name").upper())
-                        except:
-                            pass
                     await ws.send_json(data=data, dumps=json_dumps)
                 except Exception as e:
                     self.logger.error("Error with client %s: %s" % (ws, str(e)))
