@@ -100,14 +100,18 @@ class BasicController:
     def get_index_by_id(self, id):
         return next((i for i, item in enumerate(self.data) if item.id == id), None)
 
-    async def shutdown(self, app):
+    async def shutdown(self, app=None):
         logging.info("{} Shutdown ".format(self.name))
         tasks = []
         for item in self.data:
             if item.instance is not None and item.instance.running is True:
                 item.instance.task.cancel()
                 tasks.append(item.instance.task)
-        await asyncio.gather(*tasks)
+        # return_exceptions is required: gathering cancelled tasks re-raises
+        # CancelledError, which aborted this coroutine before save() below ever
+        # ran - so nothing was persisted on a normal shutdown, and any caller
+        # doing further cleanup was skipped too.
+        await asyncio.gather(*tasks, return_exceptions=True)
         await self.save()
 
     async def stop(self, id):

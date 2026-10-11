@@ -12,6 +12,38 @@ class ActorController(BasicController):
         self.update_key = "actorupdate"
         self.sorting = True
 
+    async def shutdown(self, app=None):
+        """Switch every actor off before the process exits.
+
+        The base implementation only cancels each actor's asyncio task. For a GPIO
+        actor that task is the PWM duty loop in gpioactor.run(), which sets the pin
+        HIGH and then awaits; cancelling it mid-cycle leaves the pin latched HIGH.
+        Nothing calls GPIO.cleanup() either, and RPi.GPIO does not reset pins when
+        the process exits - so stopping the service with a heater on left a
+        kilowatt element energized indefinitely with nothing supervising it.
+
+        Actors are switched off first, so the duty loop stops driving the pin, and
+        again afterwards so a loop that was mid-cycle cannot leave the output on.
+        """
+        for item in self.data:
+            try:
+                if item.instance is not None:
+                    await item.instance.off()
+            except Exception as e:
+                logging.error("Failed to switch off actor %s during shutdown: %s", item.id, e)
+
+        try:
+            await super().shutdown(app)
+        finally:
+            # Always re-confirm, even if task cancellation raised: leaving an
+            # element energized is worse than a noisy shutdown.
+            for item in self.data:
+                try:
+                    if item.instance is not None:
+                        await item.instance.off()
+                except Exception as e:
+                    logging.error("Failed to confirm actor %s off during shutdown: %s", item.id, e)
+
     async def on(self, id, power=None, output=None):
         try:
             item = self.find_by_id(id)
