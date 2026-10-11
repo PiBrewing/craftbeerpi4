@@ -2,6 +2,7 @@ import asyncio
 from abc import ABCMeta
 
 from cbpi.api.config import ConfigType
+from cbpi.api.dataclasses import NotificationType
 
 __all__ = ["CBPiActor"]
 
@@ -56,6 +57,22 @@ class CBPiActor(metaclass=ABCMeta):
             self.cancel_reason = await self.run()
         except asyncio.CancelledError as e:
             pass
+        except Exception as e:
+            # a dead actor loop (e.g. a GPIO duty cycle) can leave its output on
+            self.running = False
+            logging.exception("Actor {} stopped on an error".format(self.id))
+            try:
+                await self.off()
+            except Exception:
+                logging.exception("Failed to switch off actor {}".format(self.id))
+            item = self.cbpi.actor.find_by_id(self.id)
+            self.cbpi.notify(
+                "Actor stopped",
+                "Actor '{}' stopped on an error: {}".format(
+                    item.name if item is not None else self.id, e
+                ),
+                NotificationType.ERROR,
+            )
         finally:
             await self.on_stop()
 

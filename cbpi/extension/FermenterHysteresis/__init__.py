@@ -112,9 +112,12 @@ class FermenterHysteresis(CBPiFermenterLogic):
 
             while self.running == True:
 
-                sensor_value = float(
-                    self.get_sensor_value(self.fermenter.sensor).get("value")
+                sensor_value = await self.get_control_value(
+                    self.fermenter.sensor, [self.heater, self.cooler], self.fermenter.name
                 )
+                if sensor_value is None:
+                    await asyncio.sleep(1)
+                    continue
                 target_temp = float(self.get_fermenter_target_temp(self.id))
 
                 try:
@@ -150,8 +153,6 @@ class FermenterHysteresis(CBPiFermenterLogic):
 
         except asyncio.CancelledError as e:
             pass
-        except Exception as e:
-            logging.error("Fermenter Hysteresis Error {}".format(e))
         finally:
             self.running = False
             if self.heater:
@@ -220,23 +221,22 @@ class FermenterSpundingHysteresis(CBPiFermenterLogic):
 
             while self.running:
                 target_pressure = float(self.fermenter.target_pressure)
-                current_pressure = float(
-                    self.get_sensor_value(self.fermenter.pressure_sensor).get("value")
+                current_pressure = self.get_sensor_usable_value(
+                    self.fermenter.pressure_sensor
                 )
                 # logging.info(f'Target: {target_pressure} | Current: {current_pressure}')
                 if (
-                    current_pressure >= (target_pressure + self.spunding_offset)
+                    current_pressure is not None
+                    and current_pressure >= (target_pressure + self.spunding_offset)
                     and target_pressure != 0
                 ):
-                    while current_pressure >= target_pressure:
+                    while current_pressure is not None and current_pressure >= target_pressure:
                         await self.actor_on(self.valve)
                         await asyncio.sleep(self.valverelease)
                         await self.actor_off(self.valve)
                         await asyncio.sleep(self.pause)
-                        current_pressure = float(
-                            self.get_sensor_value(self.fermenter.pressure_sensor).get(
-                                "value"
-                            )
+                        current_pressure = self.get_sensor_usable_value(
+                            self.fermenter.pressure_sensor
                         )
                         # logging.info("Value higher than target: Spunding loop is running")
 
@@ -255,9 +255,12 @@ class FermenterSpundingHysteresis(CBPiFermenterLogic):
 
         while self.running == True:
 
-            sensor_value = float(
-                self.get_sensor_value(self.fermenter.sensor).get("value")
+            sensor_value = await self.get_control_value(
+                self.fermenter.sensor, [self.heater, self.cooler], self.fermenter.name
             )
+            if sensor_value is None:
+                await asyncio.sleep(1)
+                continue
             target_temp = float(self.get_fermenter_target_temp(self.id))
 
             try:
@@ -288,6 +291,7 @@ class FermenterSpundingHysteresis(CBPiFermenterLogic):
             await asyncio.sleep(1)
 
     async def run(self):
+        controllers = []
         try:
             self.fermenter = self.get_fermenter(self.id)
             self.heater = self.fermenter.heater
@@ -296,16 +300,20 @@ class FermenterSpundingHysteresis(CBPiFermenterLogic):
 
             pressure_controller = asyncio.create_task(self.pressure_control())
             temperature_controller = asyncio.create_task(self.temperature_control())
+            controllers += [pressure_controller, temperature_controller]
 
             await pressure_controller
             await temperature_controller
 
         except asyncio.CancelledError as e:
             pass
-        except Exception as e:
-            logging.error("Fermenter Spunding Hysteresis Error {}".format(e))
         finally:
             self.running = False
+            # the two loops are separate tasks: stop them before switching off,
+            # so neither can switch an actor back on afterwards
+            for task in controllers:
+                task.cancel()
+            await asyncio.gather(*controllers, return_exceptions=True)
             if self.heater:
                 await self.actor_off(self.heater)
             if self.cooler:

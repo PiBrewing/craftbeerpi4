@@ -3,6 +3,7 @@ import logging
 from abc import ABCMeta
 
 from cbpi.api.base import CBPiBase
+from cbpi.api.dataclasses import NotificationType
 from cbpi.api.extension import CBPiExtension
 
 
@@ -34,8 +35,34 @@ class CBPiKettleLogic(CBPiBase, metaclass=ABCMeta):
             self.cancel_reason = await self.run()
         except asyncio.CancelledError as e:
             pass
+        except Exception as e:
+            await self._on_crash(e)
         finally:
             await self.on_stop()
+
+    async def _on_crash(self, error):
+        # A logic that dies used to vanish silently: the GUI kept showing it
+        # active while nothing regulated any more, possibly with an actor on.
+        self.state = False
+        self.running = False
+        item = self.cbpi.kettle.find_by_id(self.id)
+        name = item.name if item is not None else self.id
+        logging.exception("Kettle logic of {} stopped on an error".format(name))
+        if item is not None:
+            for actor in (item.heater, item.agitator):
+                if actor:
+                    await self.actor_off(actor)
+        self.cbpi.notify(
+            "Kettle logic stopped",
+            "The logic of '{}' stopped on an error: {}. Its actors were switched off.".format(
+                name, error
+            ),
+            NotificationType.ERROR,
+        )
+        try:
+            await self.cbpi.kettle.push_udpate()
+        except Exception:
+            pass
 
     def get_state(self):
         return dict(running=self.state)

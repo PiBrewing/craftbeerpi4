@@ -38,7 +38,12 @@ class Hysteresis(CBPiKettleLogic):
 
             while self.running == True:
 
-                sensor_value = self.get_sensor_value(self.kettle.sensor).get("value")
+                sensor_value = await self.get_control_value(
+                    self.kettle.sensor, [self.heater], self.kettle.name
+                )
+                if sensor_value is None:
+                    await asyncio.sleep(1)
+                    continue
                 target_temp = self.get_kettle_target_temp(self.id)
                 try:
                     heater_state = heater.instance.state
@@ -54,8 +59,6 @@ class Hysteresis(CBPiKettleLogic):
 
         except asyncio.CancelledError as e:
             pass
-        except Exception as e:
-            logging.error("CustomLogic Error {}".format(e))
         finally:
             self.running = False
             await self.actor_off(self.heater)
