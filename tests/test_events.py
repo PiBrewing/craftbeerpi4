@@ -110,3 +110,53 @@ class EventLogTestCase(CraftBeerPiTestCase):
         circular["self"] = circular
         log.append(dict(topic="x", data=circular))
         assert log.seq == 0
+
+    async def test_notifications_do_not_evict_state(self):
+        log = EventLog(max_size=10, max_one_shot=3)
+        log.append(dict(topic="kettleupdate", data=[1]))
+        log.append(dict(topic="sensorstate", id="s1", value=1))
+        for i in range(20):
+            log.append(dict(topic="notifiaction", id=str(i)))
+        reset, events = log.since(0)
+        assert reset is False
+        assert events == [
+            '{"topic": "kettleupdate", "data": [1]}',
+            '{"topic": "sensorstate", "id": "s1", "value": 1}',
+            '{"topic": "notifiaction", "id": "17"}',
+            '{"topic": "notifiaction", "id": "18"}',
+            '{"topic": "notifiaction", "id": "19"}',
+        ]
+        assert len(log.snapshot()) == 2
+
+    async def test_forget(self):
+        log = EventLog()
+        log.append(dict(topic="sensorstate", id="s1", value=1))
+        log.append(dict(topic="sensorstate", id="s2", value=2))
+        log.forget("sensorstate", "s1")
+        assert log.snapshot() == ['{"topic": "sensorstate", "id": "s2", "value": 2}']
+
+
+class EventsShutdownTestCase(CraftBeerPiTestCase):
+
+    async def test_close_answers_pending_polls(self):
+        m = await (await self.client.get(path="/events")).json()
+
+        async def later():
+            await asyncio.sleep(0.3)
+            await self.cbpi.ws.events.close()
+
+        asyncio.create_task(later())
+        start = time.monotonic()
+        resp = await self.client.get(
+            path="/events", params=dict(epoch=m["epoch"], since=m["seq"], timeout=30)
+        )
+        assert resp.status == 200
+        assert time.monotonic() - start < 5
+
+    async def test_send_from_a_thread(self):
+        before = self.cbpi.ws.events.seq
+        await asyncio.to_thread(
+            self.cbpi.ws.send, dict(topic="sensorstate", id="t1", value=3)
+        )
+        await asyncio.sleep(0.1)
+        assert self.cbpi.ws.events.seq == before + 1

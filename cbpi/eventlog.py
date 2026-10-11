@@ -21,40 +21,77 @@ class EventLog:
     coalesced: only the latest one per (topic, id) is kept, so a client that
     comes back after a while gets the current state and not the whole history.
     One-shot messages such as notifications carry a unique id and are therefore
-    kept one by one, up to max_size.
+    kept one by one: only the last max_one_shot of them, so that they never push
+    the state messages out of the buffer.
     """
 
-    def __init__(self, max_size=500):
+    def __init__(self, max_size=500, max_one_shot=50):
         self.logger = logging.getLogger(__name__)
         # changes on every start: the client reloads its full state when it sees a new epoch
         self.epoch = shortuuid.uuid()
         self.seq = 0
         self.max_size = max_size
+        self.max_one_shot = max_one_shot
         # oldest sequence number still guaranteed to be in the buffer
         self.floor = 0
         self._events = OrderedDict()
+        # keys of the one-shot messages in the buffer, oldest first
+        self._one_shot = OrderedDict()
         self._changed = asyncio.Event()
+        # set on server shutdown: pending long-polls answer at once
+        self.closed = False
 
     @staticmethod
     def key(data):
         return (data.get("topic"), data.get("id"))
 
-    def append(self, data):
-        try:
-            # serialize now: the payload is often a live list the controllers keep mutating
-            payload = json_dumps(data)
-        except Exception as e:
-            self.logger.error("Event not serializable, dropped: %s" % str(e))
-            return
+    def append(self, data, payload=None):
+        """
+        payload: data already serialized by the caller, to serialize only once.
+        Returns the payload, None when data is not serializable.
+        """
+        if payload is None:
+            try:
+                # serialize now: the payload is often a live list the controllers keep mutating
+                payload = json_dumps(data)
+            except Exception as e:
+                self.logger.error("Event not serializable, dropped: %s" % str(e))
+                return None
         self.seq += 1
         key = self.key(data)
         self._events.pop(key, None)
         self._events[key] = (self.seq, payload)
+        if key[0] in ONE_SHOT_TOPICS:
+            self._one_shot[key] = None
+            while len(self._one_shot) > self.max_one_shot:
+                # dropped without a reset: a client that far behind only misses
+                # old popups, which a reset would not replay either
+                old, _ = self._one_shot.popitem(last=False)
+                self._events.pop(old, None)
         while len(self._events) > self.max_size:
-            _, (seq, _) = self._events.popitem(last=False)
+            old, (seq, _) = self._events.popitem(last=False)
+            self._one_shot.pop(old, None)
             self.floor = seq
+        self._notify()
+        return payload
+
+    def forget(self, topic, id):
+        """Drop the state message of a deleted object, so the snapshot no longer has it."""
+        key = (topic, id)
+        self._events.pop(key, None)
+        self._one_shot.pop(key, None)
+
+    def _notify(self):
         self._changed.set()
         self._changed = asyncio.Event()
+
+    async def close(self, app=None):
+        """
+        on_shutdown hook: aiohttp waits for the pending requests before stopping,
+        so the held long-polls would delay every restart by up to their timeout.
+        """
+        self.closed = True
+        self._notify()
 
     def snapshot(self):
         """Latest state messages, for a client that starts from scratch."""
@@ -82,7 +119,7 @@ class EventLog:
     async def wait(self, seq, timeout):
         """Wait until an event newer than seq exists, or the timeout expires."""
         deadline = time.monotonic() + timeout
-        while self.seq <= seq:
+        while self.seq <= seq and not self.closed:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 return

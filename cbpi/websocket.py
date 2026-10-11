@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import weakref
 from collections import defaultdict
@@ -23,6 +24,7 @@ class CBPiWebSocket:
                 web.get("/events", self.events.handler),
             ]
         )
+        self.cbpi.app.on_shutdown.append(self.events.close)
         self.cbpi.bus.register_object(self)
 
         # if self.cbpi.config.static.get("ws_push_all", False):
@@ -32,28 +34,39 @@ class CBPiWebSocket:
         data = dict(topic=topic, data=dict(**kwargs))
         self.logger.debug("PUSH %s " % data)
         # bus events stay websocket-only: the GUI uses none of them
-        self._broadcast(data)
+        if self._clients:
+            try:
+                self._broadcast(data, json_dumps(data))
+            except Exception as e:
+                self.logger.error("Event not serializable, dropped: %s" % str(e))
 
     def send(self, data, sorting=False):
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            # called from a plugin thread: the event log and the clients belong to the loop
+            self.cbpi.app.loop.call_soon_threadsafe(self.send, data, sorting)
+            return
         if sorting:
             try:
                 data["data"].sort(key=lambda x: x.get("name").upper())
             except:
                 pass
-        self.events.append(data)
-        self._broadcast(data)
+        payload = self.events.append(data)
+        if payload is not None:
+            self._broadcast(data, payload)
 
-    def _broadcast(self, data):
+    def _broadcast(self, data, payload):
         self.logger.debug("broadcast to ws clients. Data: %s" % data)
         for ws in self._clients:
 
-            async def send_data(ws, data):
+            async def send_data(ws, payload):
                 try:
-                    await ws.send_json(data=data, dumps=json_dumps)
+                    await ws.send_str(payload)
                 except Exception as e:
                     self.logger.error("Error with client %s: %s" % (ws, str(e)))
 
-            self.cbpi.app.loop.create_task(send_data(ws, data))
+            self.cbpi.app.loop.create_task(send_data(ws, payload))
 
     async def websocket_handler(self, request):
 
