@@ -8,6 +8,7 @@ import pathlib
 import pkgutil
 import shutil
 import socket
+import subprocess
 import zipfile
 from datetime import date, datetime, timedelta
 
@@ -322,6 +323,23 @@ class SystemController:
             return round(celsius * 9 / 5 + 32 if fahrenheit else celsius, 1)
         return 0
 
+    @staticmethod
+    def _wlan0_rate():
+        """wlan0 bit rate from iwlist, bounded in time: a stuck iwlist would hold a worker thread."""
+        try:
+            output = subprocess.run(
+                ["iwlist", "wlan0", "rate"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            return "N/A"
+        for line in output.splitlines():
+            if "Rate" in line and "=" in line and " Mb/s" in line:
+                return line[line.find("=") + 1 : line.find(" Mb/s")]
+        return "N/A"
+
     def _systeminfo(self, TEMP_UNIT):
         system = ""
         temp = 0
@@ -392,12 +410,7 @@ class SystemController:
                                     eth0speed = "down"
                             if nic == "wlan0":
                                 if info[nic].isup == True:
-                                    ratestring = os.popen(
-                                        "iwlist wlan0 rate | grep Rate"
-                                    ).read()
-                                    start = ratestring.find("=") + 1
-                                    end = ratestring.find(" Mb/s")
-                                    wlan0speed = ratestring[start:end]
+                                    wlan0speed = self._wlan0_rate()
                                 else:
                                     wlan0speed = "down"
                     except Exception as e:

@@ -60,3 +60,18 @@ class SystemInfoTestCase(CraftBeerPiTestCase):
             assert not task.done()
             info = await task
         assert "temp" in info
+
+    async def test_wlan0_rate(self):
+        out = "wlan0     unknown bit-rate information.\n          Current Bit Rate=72.2 Mb/s\n"
+        done = mock.Mock(stdout=out)
+        with mock.patch.object(system_controller.subprocess, "run", return_value=done) as run:
+            assert SystemController._wlan0_rate() == "72.2"
+            assert run.call_args.kwargs["timeout"] == 2
+
+    async def test_wlan0_rate_stuck_or_missing(self):
+        for error in (
+            system_controller.subprocess.TimeoutExpired("iwlist", 2),
+            FileNotFoundError("iwlist"),
+        ):
+            with mock.patch.object(system_controller.subprocess, "run", side_effect=error):
+                assert SystemController._wlan0_rate() == "N/A"
