@@ -2,6 +2,7 @@
 import asyncio
 import json
 import logging
+import math
 import time
 from datetime import datetime
 
@@ -77,7 +78,11 @@ class MQTTSensor(CBPiSensor):
                 action=[NotificationAction("OK", self.Confirm)],
             )
         self.value: float = 999
+        self.ignoring_invalid = False
         self.timeout = int(self.props.get("Timeout", 60))
+        # no reading is usable for control before the first message, nor once
+        # the sensor stayed silent longer than its timeout
+        self.stale_after = self.timeout if self.timeout > 0 else math.inf
         self.temprange = float(self.props.get("TempRange", 0))
         self.starttime = time.time()
         self.notificationsend = False
@@ -128,7 +133,29 @@ class MQTTSensor(CBPiSensor):
                     val = val.get(key, None)
 
             if isinstance(val, (int, float, str)):
-                self.value = float(val)
+                reading = float(val)
+                if not self.is_finite_number(reading):
+                    # an ESP publishes nan when its probe is unplugged: keep
+                    # the shown value but stop control from using it
+                    self.value_time = None
+                    # once per loss: an ESP keeps publishing nan every few
+                    # seconds while its probe is unplugged
+                    if not self.ignoring_invalid:
+                        self.ignoring_invalid = True
+                        logging.warning(
+                            "MQTTSensor {} ignored non-numeric value {}".format(
+                                self.sensor.name, val
+                            )
+                        )
+                    return
+                if self.ignoring_invalid:
+                    self.ignoring_invalid = False
+                    logging.warning(
+                        "MQTTSensor {} receives numeric values again".format(
+                            self.sensor.name
+                        )
+                    )
+                self.value = reading
                 self.push_update(self.value)
                 if self.reducedlogging == True:
                     await self.logvalue()
@@ -281,7 +308,11 @@ class MQTTSensorOffset(CBPiSensor):
                 action=[NotificationAction("OK", self.Confirm)],
             )
         self.value: float = 999
+        self.ignoring_invalid = False
         self.timeout = int(self.props.get("Timeout", 60))
+        # no reading is usable for control before the first message, nor once
+        # the sensor stayed silent longer than its timeout
+        self.stale_after = self.timeout if self.timeout > 0 else math.inf
         self.temprange = float(self.props.get("TempRange", 0))
         self.starttime = time.time()
         self.notificationsend = False
@@ -332,7 +363,29 @@ class MQTTSensorOffset(CBPiSensor):
                     val = val.get(key, None)
 
             if isinstance(val, (int, float, str)):
-                self.value = float(val) + self.offset
+                reading = float(val) + self.offset
+                if not self.is_finite_number(reading):
+                    # an ESP publishes nan when its probe is unplugged: keep
+                    # the shown value but stop control from using it
+                    self.value_time = None
+                    # once per loss: an ESP keeps publishing nan every few
+                    # seconds while its probe is unplugged
+                    if not self.ignoring_invalid:
+                        self.ignoring_invalid = True
+                        logging.warning(
+                            "MQTTSensor {} ignored non-numeric value {}".format(
+                                self.sensor.name, val
+                            )
+                        )
+                    return
+                if self.ignoring_invalid:
+                    self.ignoring_invalid = False
+                    logging.warning(
+                        "MQTTSensor {} receives numeric values again".format(
+                            self.sensor.name
+                        )
+                    )
+                self.value = reading
                 self.push_update(self.value)
                 if self.reducedlogging == True:
                     await self.logvalue()

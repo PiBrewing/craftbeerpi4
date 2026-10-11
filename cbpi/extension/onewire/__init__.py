@@ -29,6 +29,8 @@ class ReadThread(threading.Thread):
     def __init__(self, sensor_name):
         threading.Thread.__init__(self)
         self.value = 0
+        # monotonic time of the last successful read, None until the first one
+        self.timestamp = None
         self.sensor_name = sensor_name
         self.runnig = True
 
@@ -51,6 +53,7 @@ class ReadThread(threading.Thread):
                     if content.split("\n")[0].split(" ")[11] == "YES":
                         temp = float(content.split("=")[-1]) / 1000  # temp in Celcius
                         self.value = temp
+                        self.timestamp = time.monotonic()
             except:
                 pass
 
@@ -105,6 +108,9 @@ class OneWire(CBPiSensor):
         await super().start()
         self.name = self.props.get("Sensor")
         self.interval = int(self.props.get("Interval", 60))
+        # a missing or failing probe keeps the last (or initial) value: it must
+        # not drive control once no read succeeded for a few intervals
+        self.stale_after = 2 * self.interval + 30
         self.offset = float(self.props.get("offset", 0))
 
         self.reducedfrequency = float(self.props.get("ReducedLogging", 60))
@@ -170,6 +176,10 @@ class OneWire(CBPiSensor):
 
         while self.running == True:
             self.TEMP_UNIT = self.get_config_value("TEMP_UNIT", "C")
+            if self.t.timestamp is None:
+                # nothing read yet: 0 is not a temperature
+                await asyncio.sleep(1)
+                continue
             if (
                 self.TEMP_UNIT == "C"
             ):  # Report temp in C if nothing else is selected in settings
@@ -177,6 +187,7 @@ class OneWire(CBPiSensor):
             else:  # Report temp in F if unit selected in settings
                 self.value = round((9.0 / 5.0 * self.t.value + 32 + self.offset), 2)
             self.push_update(self.value)
+            self.value_time = self.t.timestamp
             if self.reducedlogging:
                 await self.logvalue()
             else:

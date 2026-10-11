@@ -44,6 +44,18 @@ class ActorController(BasicController):
                 except Exception as e:
                     logging.error("Failed to confirm actor %s off during shutdown: %s", item.id, e)
 
+    async def stop(self, id):
+        # Called before an actor is edited or deleted: stopping only ended its
+        # loop, so an actor deleted or re-pointed (e.g. to another GPIO) while
+        # on kept its output energized with nothing left to switch it off.
+        item = self.find_by_id(id)
+        try:
+            if item is not None and item.instance is not None:
+                await item.instance.off()
+        except Exception as e:
+            logging.error("Failed to switch off actor {} before stopping it: {}".format(id, e))
+        await super().stop(id)
+
     async def on(self, id, power=None, output=None):
         try:
             item = self.find_by_id(id)
@@ -100,7 +112,7 @@ class ActorController(BasicController):
                 self.cbpi.push_update("cbpi/actorupdate/{}".format(id), item.to_dict())
             return True
         except Exception as e:
-            logging.error("Failed to switch on Actor {} {}".format(id, e), True)
+            logging.error("Failed to switch off Actor {} {}".format(id, e))
             return False
 
     async def toogle(self, id):
