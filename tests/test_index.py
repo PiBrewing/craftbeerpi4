@@ -11,6 +11,17 @@ class IndexTestCase(CraftBeerPiTestCase):
         resp = await self.client.get(path="/")
         assert resp.status == 200
 
+    async def test_html_not_cached(self):
+        resp = await self.client.get(path="/static/test.html")
+        assert resp.status == 200
+        assert resp.content_type == "text/html"
+        assert resp.headers["Cache-Control"] == "no-cache"
+
+    async def test_static_assets_keep_cache_policy(self):
+        resp = await self.client.get(path="/static/beer_icon.svg")
+        assert resp.status == 200
+        assert "Cache-Control" not in resp.headers
+
     async def test_404(self):
         # Test Index Page
         resp = await self.client.get(path="/abc")

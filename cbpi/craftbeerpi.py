@@ -283,6 +283,16 @@ class CraftBeerPi:
 
         self.app.add_routes([web.get('/', http_index),
                              web.static('/static', os.path.join(os.path.dirname(__file__), "static"), show_index=True)])
+
+        async def html_no_cache(request, response):
+            # HTML pages (GUI index.html, plugin pages) carry no cache header by default,
+            # so browsers keep them heuristically, for days: after an update they keep
+            # running the old GUI. Force revalidation (cheap 304 thanks to the ETag).
+            # The hashed JS/CSS bundles they reference can stay cached.
+            if response.content_type == "text/html" and "Cache-Control" not in response.headers:
+                response.headers["Cache-Control"] = "no-cache"
+
+        self.app.on_response_prepare.append(html_no_cache)
         
     def testport(self, port=8000):
         HOST = "localhost"
