@@ -62,6 +62,35 @@ from voluptuous.schema_builder import message
 
 logger = logging.getLogger(__name__)
 
+SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
+
+
+@web.middleware
+async def csrf_middleware(request, handler):
+    # No route is authenticated by cbpi itself, so a foreign page could replay the
+    # browser's cached proxy credentials: refuse cross-site state-changing requests.
+    if request.method in SAFE_METHODS:
+        return await handler(request)
+    fetch_site = request.headers.get("Sec-Fetch-Site")
+    if fetch_site is not None:
+        if fetch_site in ("same-origin", "none"):
+            return await handler(request)
+        logger.warning("Rejected cross-site %s %s (Sec-Fetch-Site: %s)", request.method, request.path, fetch_site)
+        raise web.HTTPForbidden(text="Cross-site request rejected")
+    origin = request.headers.get("Origin")
+    if origin is None:
+        return await handler(request)
+    origin_host = origin.split("://", 1)[1].lower() if "://" in origin else None
+    allowed = {request.headers.get("Host", "").lower()}
+    forwarded_host = request.headers.get("X-Forwarded-Host")
+    if forwarded_host:
+        allowed.add(forwarded_host.split(",")[0].strip().lower())
+    if origin_host and origin_host in allowed:
+        return await handler(request)
+    logger.warning("Rejected cross-site %s %s (Origin: %s)", request.method, request.path, origin)
+    raise web.HTTPForbidden(text="Cross-site request rejected")
+
+
 @web.middleware
 async def error_middleware(request, handler):
     try:
@@ -107,7 +136,7 @@ class CraftBeerPi:
         logger.info("Init CraftBeerPI")
 
         policy = auth.SessionTktAuthentication(urandom(32), 60, include_ip=True)
-        middlewares = [web.normalize_path_middleware(), session_middleware(EncryptedCookieStorage(urandom(32))),
+        middlewares = [web.normalize_path_middleware(), csrf_middleware, session_middleware(EncryptedCookieStorage(urandom(32))),
                        auth.auth_middleware(policy), error_middleware]
         # max upload size increased to 5 Mb. Default is 1 Mb -> config and svg upload
         self.app = web.Application(middlewares=middlewares, client_max_size=5*1024*1024)
