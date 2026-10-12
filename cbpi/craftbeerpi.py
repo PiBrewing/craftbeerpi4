@@ -349,7 +349,11 @@ class CraftBeerPi:
     def start(self):
         port=self.static_config.get("port",8000)
         if not self.testport(port):
-            web.run_app(self.init_serivces(), port=port)
+            # aiohttp waits up to shutdown_timeout (60 s by default) for open
+            # handlers before the cleanup hooks run, and a /ws client never
+            # finishes. systemd kills the service after 90 s, so the actors
+            # were never switched off and the final state never saved.
+            web.run_app(self.init_serivces(), port=port, shutdown_timeout=5)
         else:
             logging.error("Port {} is already in use! Please check, if server is already running (e.g. in automode)".format(port))
             exit(1)
