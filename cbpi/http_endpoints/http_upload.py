@@ -30,7 +30,7 @@ class UploadHttpEndpoints:
                 description: successful operation
         """
         data = await request.post()
-        logging.error("Received file upload request with data: {}".format(data))
+        logging.info("Received file upload request with data: {}".format(data))
         await self.controller.FileUpload(data)
         return web.Response(status=200)
 

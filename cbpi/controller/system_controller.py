@@ -156,7 +156,7 @@ class SystemController:
                 kettles["data"], open(fullkettlename, "w"), indent=4, sort_keys=True
             )
         except Exception as e:
-            logging.info(e)
+            logging.error("Config backup: creation of files failed: {}".format(e))
             self.cbpi.notify(
                 "Error",
                 "Creation of files failed: {}".format(e),
@@ -172,7 +172,7 @@ class SystemController:
             zipObj.write(fullkettlename)
             zipObj.close()
         except Exception as e:
-            logging.info(e)
+            logging.error("Config backup: zip creation failed: {}".format(e))
             self.cbpi.notify(
                 "Error", "Zip creation failed: {}".format(e), NotificationType.ERROR
             )
@@ -184,7 +184,7 @@ class SystemController:
             os.remove(fullsensorname)
             os.remove(fullkettlename)
         except Exception as e:
-            logging.info(e)
+            logging.error("Config backup: removal of original files failed: {}".format(e))
             self.cbpi.notify(
                 "Error",
                 "Removal of original files failed: {}".format(e),

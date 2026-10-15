@@ -180,7 +180,7 @@ class OneWire(CBPiSensor):
             if self.reducedlogging:
                 await self.logvalue()
             else:
-                logging.info("OneWire {} regular logging".format(self.sensor.name))
+                logging.debug("OneWire {} regular logging".format(self.sensor.name))
                 self.log_data(self.value)
                 self.lastlog = time.time()
             await asyncio.sleep(self.interval)
