@@ -299,6 +299,15 @@ class FermentationController:
 
     async def delete(self, id: str):
         item = self._find_by_id(id)
+        if item is not None:
+            # a deleted fermenter kept its logic and steps running, still
+            # driving its actors, with nothing left in the GUI to stop them
+            try:
+                if item.instance is not None and item.instance.state is True:
+                    await item.instance.stop()
+            except Exception as e:
+                self.logger.error("Failed to stop logic of fermenter {}: {}".format(id, e))
+            await self.shutdown(None, id)
         self.data = list(filter(lambda item: item.id != id, self.data))
         self.save()
         self.push_update()
@@ -340,6 +349,17 @@ class FermentationController:
         except Exception as e:
             self.logger.error(e)
 
+    @staticmethod
+    def _step_duration(props):
+        try:
+            return (
+                int(props.get("TimerM", 0) or 0)
+                + 60 * int(props.get("TimerH", 0) or 0)
+                + 1440 * int(props.get("TimerD", 0) or 0)
+            ) * 60
+        except (TypeError, ValueError):
+            return 0
+
     async def update_step(self, id, item):
         fermenter = self._find_by_id(id)
         stepid = item.get("id")
@@ -350,6 +370,26 @@ class FermentationController:
         name = item.get("name")
         props = Props(item.get("props"))
 
+        # Editing used to reset the step to initial while its old instance kept
+        # running unseen (its timer could still end the step). Stop the old
+        # instance, keep the status and the running timer (shifted by a change
+        # of duration), and restart the step if it was active.
+        old = self._find_step_by_id(fermenter.steps, stepid)
+        was_active = False
+        if old is not None:
+            status = old.status
+            was_active = status == StepState.ACTIVE
+            if old.instance is not None:
+                await old.instance.stop()
+            if old.endtime:
+                endtime = int(
+                    old.endtime + self._step_duration(props) - self._step_duration(old.props)
+                )
+            if was_active:
+                # paused unless the restart below succeeds
+                status = StepState.STOP
+        item = {**item, "endtime": endtime}
+
         logging.info("update step")
         try:
             type_cfg = self.steptypes.get(type)
@@ -359,7 +399,7 @@ class FermentationController:
             instance = clazz(self.cbpi, fermenter, item, props, self._done)
             logging.info(instance)
         except Exception as e:
-            logging.warning("Failed to create step instance %s - %s " % (item.id, e))
+            logging.warning("Failed to create step instance %s - %s " % (stepid, e))
             instance = None
         step = FermenterStep(
             id=stepid,
@@ -378,6 +418,9 @@ class FermentationController:
             )
         except Exception as e:
             logging.info(e)
+
+        if was_active and instance is not None:
+            await self.start(fermenter.id)
 
         self.save()
 

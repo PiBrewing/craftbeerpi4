@@ -88,6 +88,16 @@ async def error_middleware(request, handler):
     return web.json_response(status=500, data={'error': message})
 
 
+def _isolated_cleanup(receiver):
+    async def cleanup(app):
+        try:
+            await receiver(app)
+        except Exception:
+            logger.exception("Cleanup handler {} failed".format(receiver))
+
+    return cleanup
+
+
 class CraftBeerPi:
 
     def __init__(self, configFolder):
@@ -136,6 +146,16 @@ class CraftBeerPi:
         if str(self.static_config.get("mqtt", False)).lower() == "true":
             self.satellite: SatelliteController = SatelliteController(self)
         self.dashboard = DashboardController(self)
+
+        # Cleanup handlers run in registration order and the actor controller is
+        # registered first: actors were switched off while kettle/fermenter
+        # logics and steps still ran and could switch them back on. Switch the
+        # actors off once everything driving them has stopped.
+        # A handler that raises also stops the ones after it, so each is isolated.
+        self.app.on_cleanup.remove(self.actor.shutdown)
+        self.app.on_cleanup.append(self.actor.shutdown)
+        for i, receiver in enumerate(self.app.on_cleanup):
+            self.app.on_cleanup[i] = _isolated_cleanup(receiver)
 
         self.http_step = StepHttpEndpoints(self)
         self.http_recipe = RecipeHttpEndpoints(self)
@@ -329,7 +349,11 @@ class CraftBeerPi:
     def start(self):
         port=self.static_config.get("port",8000)
         if not self.testport(port):
-            web.run_app(self.init_serivces(), port=port)
+            # aiohttp waits up to shutdown_timeout (60 s by default) for open
+            # handlers before the cleanup hooks run, and a /ws client never
+            # finishes. systemd kills the service after 90 s, so the actors
+            # were never switched off and the final state never saved.
+            web.run_app(self.init_serivces(), port=port, shutdown_timeout=5)
         else:
             logging.error("Port {} is already in use! Please check, if server is already running (e.g. in automode)".format(port))
             exit(1)

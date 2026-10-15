@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import logging
+import math
 import re
 import time
 from datetime import datetime
@@ -48,6 +49,9 @@ class HTTPSensor(CBPiSensor):
         self.running = True
         self.value = 0
         self.timeout = int(self.props.get("Timeout", 60))
+        # 0 is not a reading: nothing is usable for control before the first
+        # value, nor once the sender stayed silent longer than the timeout
+        self.stale_after = self.timeout if self.timeout > 0 else math.inf
         self.starttime = time.time()
         self.notificationsend = False
         self.nextchecktime = self.starttime + self.timeout

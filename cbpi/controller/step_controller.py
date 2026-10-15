@@ -110,6 +110,16 @@ class StepController:
     async def update(self, item: Step):
 
         logging.info("update step")
+        # The edited step replaces the old one with a new instance. If the old
+        # one was running it kept running unseen (a second instance driving the
+        # kettle once restarted), and its status fell back to initial: stop it
+        # first, keep its status, and restart the edited step if it was active.
+        old = self.find_by_id(item.id)
+        was_active = old is not None and old.status == StepState.ACTIVE
+        if old is not None:
+            item.status = old.status
+            if old.instance is not None:
+                await old.instance.stop()
         try:
             type_cfg = self.types.get(item.type)
             clazz = type_cfg.get("class")
@@ -121,6 +131,11 @@ class StepController:
         self.profile = list(
             map(lambda old: item if old.id == item.id else old, self.profile)
         )
+        if was_active:
+            # paused unless the restart below succeeds
+            item.status = StepState.STOP
+            if item.instance is not None:
+                await self.start_step(item)
         await self.save()
         return item
 
