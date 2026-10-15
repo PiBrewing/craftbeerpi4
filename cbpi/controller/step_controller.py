@@ -137,7 +137,7 @@ class StepController:
     async def start(self):
 
         if self.find_by_status(StepState.ACTIVE) is not None:
-            logging.error("Steps already running")
+            logging.warning("Steps already running")
             return
 
         step = self.find_by_status(StepState.STOP)
@@ -226,7 +226,7 @@ class StepController:
 
     async def reset_all(self):
         if self.find_by_status(StepState.ACTIVE) is not None:
-            logging.error("Please stop before reset")
+            logging.warning("Please stop before reset")
             return
 
         for item in self.profile:
@@ -264,7 +264,7 @@ class StepController:
     async def move(self, id, direction: StepMove):
         index = self.get_index_by_id(id)
         if direction not in [-1, 1]:
-            self.logger.error("Cant move. Direction 1 and -1 allowed")
+            self.logger.warning("Cant move. Direction 1 and -1 allowed")
             return
         self.profile[index], self.profile[index + direction] = (
             self.profile[index + direction],
@@ -277,11 +277,11 @@ class StepController:
         step = self.find_by_id(id)
 
         if step is None:
-            logging.error("Cant find step - Nothing deleted - Id: %s", id)
+            logging.warning("Cant find step - Nothing deleted - Id: %s", id)
             return
 
         if step.status == StepState.ACTIVE:
-            logging.error("Cant delete active Step %s", id)
+            logging.warning("Cant delete active Step %s", id)
             return
 
         self.profile = list(filter(lambda item: item.id != id, self.profile))

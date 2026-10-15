@@ -162,6 +162,6 @@ class NotificationController:
             del self.callback_cache[notification_id]
             return True
         except Exception as e:
-            self.logger.error("Failed to call notification callback")
+            self.logger.error("Failed to call notification callback: {}".format(repr(e)))
             return False    
 

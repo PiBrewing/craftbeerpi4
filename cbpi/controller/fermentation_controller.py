@@ -377,7 +377,7 @@ class FermentationController:
                 map(lambda old: step if old.id == step.id else old, fermenter.steps)
             )
         except Exception as e:
-            logging.info(e)
+            logging.error("Failed to update step {}: {}".format(stepid, e))
 
         self.save()
 
@@ -432,7 +432,7 @@ class FermentationController:
 
             step = self._find_by_status(item.steps, StepState.ACTIVE)
             if step is not None:
-                logging.error("Steps already running")
+                logging.warning("Steps already running")
                 return
 
             step = self._find_by_status(item.steps, StepState.STOP)
