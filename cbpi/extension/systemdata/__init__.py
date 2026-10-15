@@ -18,7 +18,7 @@ class Systemdata(CBPiExtension):
         self.update_key = "systemupdate"
         self.sorting = False
         self._task = asyncio.create_task(self.run())
-        logger.error("INIT Systemdata Extension")
+        logger.info("INIT Systemdata Extension")
 
     async def run(self):
         while True:
