@@ -1,3 +1,5 @@
+import asyncio
+import os
 import types
 import warnings
 
@@ -28,3 +30,13 @@ class AiohttpCompatTestCase(CraftBeerPiTestCase):
         request = types.SimpleNamespace(config_dict=self.app)
         assert get_scheduler_from_request(request) is scheduler
 
+    async def test_clear_log_closes_the_log_file(self):
+        name = "unconfigured_test_sensor_ID"
+        os.makedirs(self.cbpi.log.logsFolderPath, exist_ok=True)
+        self.cbpi.log.log_data(name, 1)
+        # let the listener tasks open the log file
+        for _ in range(3):
+            await asyncio.sleep(0)
+        handler = self.cbpi.log.datalogger[name].handlers[0]
+        self.cbpi.log.clear_log(name)
+        assert handler.stream is None
