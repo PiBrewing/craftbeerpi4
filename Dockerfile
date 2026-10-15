@@ -1,14 +1,9 @@
-FROM alpine:latest as download
-RUN apk --no-cache add curl && mkdir /downloads
-# Download installation files
-RUN curl https://github.com/PiBrewing/craftbeerpi4-ui/archive/main.zip -L -o ./downloads/cbpi-ui.zip
-
-FROM python:3.13 as base
+# Pinned by digest so the image (and the build cache) only changes with an
+# explicit bump. Dependabot proposes the 3.14.x patch releases.
+FROM python:3.14.8-trixie@sha256:446efb4225200a0a196707aa7953898b37962fd3b8859a636035de3af657081e AS base
 
 # Install dependencies
-RUN     apt-get update \
-    &&  apt-get upgrade -y
-RUN apt-get install --no-install-recommends -y \
+RUN apt-get update && apt-get install --no-install-recommends -y \
     libsystemd-dev \
     libffi-dev \
     python3-pip \
@@ -41,14 +36,24 @@ RUN pip3 install --no-cache-dir -r /cbpi-src/requirements.txt
 # /dev/gpiomem device.
 RUN pip3 install --no-cache-dir RPi.GPIO==0.7.1
 
-FROM base as deploy
+# Test dependencies, for the CI and .github/ci-local.sh. Not in the image.
+FROM base AS test
+COPY --chown=craftbeerpi ./requirements-dev.txt /cbpi-src/
+RUN pip3 install --no-cache-dir -r /cbpi-src/requirements-dev.txt
+
+FROM base AS deploy
+# Install craftbeerpi-ui first: it provides the cbpi4gui requirement of
+# setup.py (not fetched from PyPI), and a source change does not reinstall
+# it. ADD fetches the archive on every build and only invalidates the cache
+# when its content changed, so a new UI commit always reaches the image (a
+# RUN curl layer stayed cached on the old UI forever).
+ARG CBPI_UI_REF=main
+ADD --chown=craftbeerpi https://github.com/PiBrewing/craftbeerpi4-ui/archive/refs/heads/${CBPI_UI_REF}.zip /downloads/cbpi-ui.zip
+RUN pip3 install --no-cache-dir /downloads/cbpi-ui.zip
+
 # Install craftbeerpi from source
 COPY --chown=craftbeerpi . /cbpi-src
 RUN pip3 install --no-cache-dir /cbpi-src
-
-# Install craftbeerpi-ui
-COPY --from=download --chown=craftbeerpi /downloads /downloads
-RUN pip3 install --no-cache-dir /downloads/cbpi-ui.zip
 
 # Clean up installation files
 USER root
