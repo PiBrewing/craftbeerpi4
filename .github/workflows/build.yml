@@ -116,10 +116,45 @@ jobs:
           echo "publish_image=$PUBLISH_IMAGE" >> "$GITHUB_OUTPUT"
           echo "ui_ref=$UI_REF" >> "$GITHUB_OUTPUT"
 
+  # Raspberry Pi OS bookworm ships Python 3.11, which is what most
+  # installations run: the tests and a clean install of the package must
+  # pass there too, not only on the version of the docker image.
+  tests-pi:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    name: Tests on Python 3.11 (Raspberry Pi OS bookworm)
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements*.txt
+            setup.py
+
+      - name: Install packages
+        run: sudo apt-get install -y --no-install-recommends libsystemd-dev
+
+      - name: Install Requirements
+        run: pip3 install setuptools -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest tests
+
+      - name: Install the package in a clean environment
+        run: |
+          python setup.py sdist
+          python -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install dist/cbpi4-*.tar.gz
+
   # Each platform builds on a native runner: emulating arm64 with QEMU made
   # a build without cache take 14 minutes, most of it in pip install.
   docker:
-    needs: build
+    needs: [build, tests-pi]
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     permissions:

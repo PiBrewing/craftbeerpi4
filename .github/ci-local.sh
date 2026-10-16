@@ -3,6 +3,8 @@
 #
 #   .github/ci-local.sh          tests + package install check (~1 min once cached)
 #   .github/ci-local.sh --docker also builds the docker image for this machine
+#   .github/ci-local.sh --pi     also runs the tests on Python 3.11, as on
+#                                Raspberry Pi OS bookworm (options combine)
 #
 # The tests run in the "test" stage of the Dockerfile, so they see the same
 # Python and requirements as the image. Docker caches that stage: it is only
@@ -33,7 +35,18 @@ docker run --rm -v "$PWD":/cbpi-src:ro -w /tmp "$image" sh -c '
     test -f config/config.json
 '
 
-if [[ ${1:-} == --docker ]]; then
+if [[ " $* " == *" --pi "* ]]; then
+    echo "== tests on Python 3.11 (Raspberry Pi OS bookworm)"
+    docker run --rm -v "$PWD":/cbpi-src:ro -w /tmp python:3.11-bookworm sh -c '
+        set -e
+        apt-get update -qq >/dev/null && apt-get install -y -qq libsystemd-dev >/dev/null 2>&1
+        cp -r /cbpi-src /tmp/src && cd /tmp/src
+        PIP_ROOT_USER_ACTION=ignore PIP_DISABLE_PIP_VERSION_CHECK=1 pip install -q -r requirements-dev.txt
+        python -m pytest -q -p no:cacheprovider --disable-warnings tests
+    '
+fi
+
+if [[ " $* " == *" --docker "* ]]; then
     echo "== docker image (target deploy)"
     docker build -q --target deploy -t cbpi-ci-deploy . >/dev/null
 fi

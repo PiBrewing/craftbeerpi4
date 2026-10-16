@@ -16,7 +16,8 @@ pyfiglet==1.0.4
 pandas==3.0.5
 shortuuid==1.0.13
 tabulate==0.10.0
-numpy==2.5.3
+numpy==2.5.3; python_version >= "3.12"
+numpy==2.4.4; python_version < "3.12"
 click==8.5.0
 importlib_metadata
 aiomqtt==2.5.1
