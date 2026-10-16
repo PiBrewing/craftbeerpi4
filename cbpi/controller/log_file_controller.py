@@ -87,6 +87,9 @@ class LogController:
             all_filenames = glob.glob(
                 os.path.join(self.logsFolderPath, f"sensor_{name}.log*")
             )
+            if not all_filenames:
+                # no reading logged yet (new sensor, log just cleared)
+                continue
             # concat all logs
             df = pd.concat(
                 [
@@ -120,15 +123,26 @@ class LogController:
                     result, df, how="outer", left_index=True, right_index=True
                 )
 
-        data = {"time": df.index.tolist()}
+        if result is None:
+            return {"time": [], **{name: [] for name in names}}
+        if isinstance(result, pd.Series):
+            # a single sensor had a log
+            result = result.to_frame()
+
+        # the merged index covers the times of all sensors, the index of the
+        # last one read only its own
+        data = {"time": result.index.tolist()}
 
         if len(names) > 1:
             for name in names:
-                data[name] = (
-                    result[name].interpolate(limit_direction="both", limit=10).tolist()
-                )
+                if name in result:
+                    data[name] = (
+                        result[name].interpolate(limit_direction="both", limit=10).tolist()
+                    )
+                else:
+                    data[name] = [None] * len(result.index)
         else:
-            data[name] = result.interpolate().tolist()
+            data[name] = result[name].interpolate().tolist()
 
         logging.info("Send Log for {}".format(names))
 
