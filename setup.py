@@ -59,7 +59,6 @@ setup(name='cbpi4',
       install_requires=[
           "typing-extensions>=4",
           "aiohttp==3.14.3",
-          "aiohttp-auth==0.1.1",
           "aiohttp-session==2.12.1",
           "aiohttp-swagger==1.0.16",
           "aiojobs==1.4.0 ",
