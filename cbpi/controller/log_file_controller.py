@@ -39,8 +39,8 @@ class LogController:
 
     def remove_sensor_data_listener(self, listener_id):
         try:
-            del self.sensor_data_listener[listener_id]
-        except:
+            del self.sensor_data_listeners[listener_id]
+        except KeyError:
             self.logger.error("Failed to remove listener {}".format(listener_id))
 
     async def _call_sensor_data_listeners(self, sensor_id, value, formatted_time, name):
