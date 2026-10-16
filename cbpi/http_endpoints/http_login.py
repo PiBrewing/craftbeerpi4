@@ -1,5 +1,5 @@
 from aiohttp import web
-from aiohttp_auth import auth
+from cbpi import auth
 from cbpi.api import *
 
 

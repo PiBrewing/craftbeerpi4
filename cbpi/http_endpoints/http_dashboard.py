@@ -17,7 +17,7 @@ class DashBoardHttpEndpoints:
             os.path.join(cbpi.config_folder.get_file_path("dashboard"), "widgets"),
         )
 
-    @request_mapping(path="/{id:\d+}/content", auth_required=False)
+    @request_mapping(path=r"/{id:\d+}/content", auth_required=False)
     async def get_content(self, request):
         """
         ---
@@ -40,7 +40,7 @@ class DashBoardHttpEndpoints:
             await self.cbpi.dashboard.get_content(dashboard_id), dumps=json_dumps
         )
 
-    @request_mapping(path="/{id:\d+}/content", method="POST", auth_required=False)
+    @request_mapping(path=r"/{id:\d+}/content", method="POST", auth_required=False)
     async def add_content(self, request):
         """
         ---
@@ -75,7 +75,7 @@ class DashBoardHttpEndpoints:
         # print("##### SAVE")
         return web.Response(status=204)
 
-    @request_mapping(path="/{id:\d+}/content", method="DELETE", auth_required=False)
+    @request_mapping(path=r"/{id:\d+}/content", method="DELETE", auth_required=False)
     async def delete_conent(self, request):
         """
         ---
