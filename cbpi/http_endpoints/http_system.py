@@ -70,7 +70,7 @@ class SystemHttpEndpoints:
     @request_mapping(path="/logs", auth_required=False)
     async def http_get_log(self, request):
         result = []
-        file_pattern = re.compile("^(\w+.).log(.?\d*)")
+        file_pattern = re.compile(r"^(\w+.).log(.?\d*)")
         for filename in sorted(os.listdir(self.cbpi.logsFolderPath), reverse=True):
             if file_pattern.match(filename):
                 result.append(filename)
