@@ -28,7 +28,7 @@ jobs:
           python-version: '3.13'
       
       - name: Install packages
-        run: sudo apt install -y libsystemd-dev
+        run: sudo apt-get update && sudo apt-get install -y libsystemd-dev
       
       - name: Install setuptools
         run: pip3 install setuptools --upgrade  
