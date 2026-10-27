@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import math
+import time
 from abc import ABCMeta, abstractmethod
 
 from cbpi.api.base import CBPiBase
-from cbpi.api.dataclasses import DataType
+from cbpi.api.dataclasses import DataType, NotificationType
 from cbpi.api.extension import CBPiExtension
 
 
@@ -22,6 +24,14 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
         self.temprange = 0
         self.kettle = None
         self.fermenter = None
+        # Control logic must not act on a reading that no longer reflects the
+        # process: value_time is the monotonic time of the last finite reading
+        # pushed, and a sensor that sets stale_after (seconds, math.inf for
+        # "needs a first reading but never expires") has no usable value
+        # before its first reading or once it is older than that.
+        self.value_time = None
+        self.stale_after = None
+        self.failed = False
 
     def init(self):
         pass
@@ -37,6 +47,30 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
 
     def get_unit(self):
         pass
+
+    @staticmethod
+    def is_finite_number(value):
+        try:
+            return math.isfinite(float(value))
+        except (TypeError, ValueError):
+            return False
+
+    def usable_value(self):
+        """The current value as a float if control logic may act on it, else None."""
+        if self.failed:
+            return None
+        try:
+            value = (self.get_state() or {}).get("value")
+        except Exception:
+            return None
+        if not self.is_finite_number(value):
+            return None
+        if self.stale_after is not None:
+            if self.value_time is None:
+                return None
+            if time.monotonic() - self.value_time > self.stale_after:
+                return None
+        return float(value)
 
     def checkrange(self, value):
         # if Kettle and fermenter are selected, range check is deactivated
@@ -57,6 +91,8 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
             return True
 
     def push_update(self, value, mqtt=True):
+        if self.is_finite_number(value):
+            self.value_time = time.monotonic()
         if self.temprange != 0:
             self.inrange = self.checkrange(value)
         else:
@@ -108,5 +144,18 @@ class CBPiSensor(CBPiBase, metaclass=ABCMeta):
             self.cancel_reason = await self.run()
         except asyncio.CancelledError as e:
             pass
+        except Exception as e:
+            # a dead sensor loop used to leave its last value in place forever
+            self.failed = True
+            self.running = False
+            logging.exception("Sensor {} stopped on an error".format(self.id))
+            item = self.cbpi.sensor.find_by_id(self.id)
+            self.cbpi.notify(
+                "Sensor stopped",
+                "Sensor '{}' stopped on an error: {}. Its value is no longer used for control.".format(
+                    item.name if item is not None else self.id, e
+                ),
+                NotificationType.ERROR,
+            )
         finally:
             await self.on_stop()

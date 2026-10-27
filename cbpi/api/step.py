@@ -16,6 +16,20 @@ logging.basicConfig(
 )
 
 
+def _notify_step_error(step, error):
+    # a step whose run() raised stayed shown as active with nothing running
+    try:
+        from cbpi.api.dataclasses import NotificationType
+
+        step.cbpi.notify(
+            "Step stopped",
+            "Step '{}' stopped on an error: {}".format(step.name, error),
+            NotificationType.ERROR,
+        )
+    except Exception:
+        pass
+
+
 class StepResult(Enum):
     STOP = 1
     NEXT = 2
@@ -59,6 +73,7 @@ class CBPiStep(CBPiBase):
                 self._done_callback(self, result)
             except Exception as e:
                 self.logger.error(e)
+                _notify_step_error(self, e)
 
     async def start(self):
         self.logger.info("Start {}".format(self.name))
@@ -151,6 +166,7 @@ class CBPiFermentationStep(CBPiBase):
                 self._done_callback(self, result, fermenter)
             except Exception as e:
                 self.logger.error(e)
+                _notify_step_error(self, e)
 
     async def start(self):
         self.logger.info("Start {}".format(self.name))

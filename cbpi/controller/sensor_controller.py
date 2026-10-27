@@ -26,6 +26,17 @@ class SensorController(BasicController):
             props=data.get("props", []),
         )
 
+    def get_usable_value(self, id):
+        """Value of a sensor for control decisions, or None when it has no
+        fresh, finite reading (never read, timed out, NaN, sensor loop dead)."""
+        if id is None:
+            return None
+        try:
+            return self.find_by_id(id).instance.usable_value()
+        except Exception as e:
+            logging.error("Failed read sensor value {} {} ".format(id, e))
+            return None
+
     def get_sensor_value(self, id):
         if id is None:
             return None
