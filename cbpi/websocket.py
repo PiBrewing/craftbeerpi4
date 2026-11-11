@@ -15,10 +15,21 @@ class CBPiWebSocket:
         self._clients = weakref.WeakSet()
         self.logger = logging.getLogger(__name__)
         self.cbpi.app.add_routes([web.get("/ws", self.websocket_handler)])
+        # Close clients when shutdown starts. Otherwise aiohttp's graceful shutdown waits
+        # for open websockets (60 s), and a service manager's stop timeout kills CBPi
+        # before the on_cleanup handlers (kettle/actor shutdown, save) run.
+        self.cbpi.app.on_shutdown.append(self.close_all)
         self.cbpi.bus.register_object(self)
 
         # if self.cbpi.config.static.get("ws_push_all", False):
         self.cbpi.bus.register("#", self.listen)
+
+    async def close_all(self, app):
+        for ws in list(self._clients):
+            try:
+                await ws.close(code=aiohttp.WSCloseCode.GOING_AWAY, message=b"Server shutdown")
+            except Exception as e:
+                self.logger.warning("Error closing websocket client: %s" % e)
 
     async def listen(self, topic, **kwargs):
         data = dict(topic=topic, data=dict(**kwargs))
