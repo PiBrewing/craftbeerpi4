@@ -46,7 +46,7 @@ class ActorHttpEndpoints:
         data = await self.controller.ws_actor_update()
         return web.json_response(status=200 if data else 500)
         
-    @request_mapping(path="/{id:\w+}", auth_required=False)
+    @request_mapping(path=r"/{id:\w+}", auth_required=False)
     async def http_get_one(self, request):
         """
         ---

@@ -185,7 +185,9 @@ class LogController:
         logging.info(f"Deleting logfiles for sensor {name}.")
 
         if name in self.datalogger:
-            self.datalogger[name].removeHandler(self.datalogger[name].handlers[0])
+            handler = self.datalogger[name].handlers[0]
+            self.datalogger[name].removeHandler(handler)
+            handler.close()
             del self.datalogger[name]
 
         for f in all_filenames:
