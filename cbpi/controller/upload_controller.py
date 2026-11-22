@@ -122,7 +122,7 @@ class UploadController:
                                         NotificationType.ERROR,
                                     )
                                 repeat = False
-                                logging.error(r.headers["Retry-After"])
+                                logging.debug("Retry-After: {}".format(r.headers["Retry-After"]))
                             else:
                                 bf_recipe_list = await r.json()
                         await bf_session.close()
@@ -547,7 +547,7 @@ class UploadController:
                     )
 
                 e = json.load(open(self.path))
-                logging.info(json.dumps(e, indent=4))
+                logging.debug(json.dumps(e, indent=4))
                 name = e["Name"]
                 boil_time = float(e["Kochzeit_Wuerze"])
 

@@ -133,7 +133,7 @@ class MQTTSensor(CBPiSensor):
                 if self.reducedlogging == True:
                     await self.logvalue()
                 else:
-                    logging.info(
+                    logging.debug(
                         "MQTTSensor {} regular logging".format(self.sensor.name)
                     )
                     self.log_data(self.value)
@@ -337,7 +337,7 @@ class MQTTSensorOffset(CBPiSensor):
                 if self.reducedlogging == True:
                     await self.logvalue()
                 else:
-                    logging.info(
+                    logging.debug(
                         "MQTTSensor {} regular logging".format(self.sensor.name)
                     )
                     self.log_data(self.value)

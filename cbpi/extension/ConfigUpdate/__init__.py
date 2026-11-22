@@ -152,7 +152,7 @@ class ConfigUpdate(CBPiExtension):
                 )
 
         if boil_actor is None:
-            logger.warning("INIT Boil Actor Setting")
+            logger.info("INIT Boil Actor Setting")
             try:
                 await self.cbpi.config.add(
                     "steps_boil_actor",
@@ -973,7 +973,7 @@ class ConfigUpdate(CBPiExtension):
 
         ## Check if influxdbname is in config
         if CONFIG_STATUS is None or CONFIG_STATUS != self.version:
-            logger.warning("Setting Config Status")
+            logger.info("Setting Config Status")
             try:
                 await self.cbpi.config.add(
                     "CONFIG_STATUS",
