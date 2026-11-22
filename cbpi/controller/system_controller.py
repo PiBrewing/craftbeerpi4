@@ -1,3 +1,4 @@
+import asyncio
 import glob
 import importlib
 import json
@@ -7,6 +8,7 @@ import pathlib
 import pkgutil
 import shutil
 import socket
+import subprocess
 import zipfile
 from datetime import date, datetime, timedelta
 
@@ -297,6 +299,48 @@ class SystemController:
 
     async def systeminfo(self):
         logging.info("SYSTEMINFO")
+        TEMP_UNIT = self.cbpi.config.get("TEMP_UNIT", "C")
+        # blocking calls (sysfs reads, iwlist): keep them off the event loop, which
+        # also runs the kettle/fermenter logics and the sensors
+        return await asyncio.to_thread(self._systeminfo, TEMP_UNIT)
+
+    @staticmethod
+    def _cpu_temperature(fahrenheit):
+        """
+        CPU temperature from the cpu_thermal hwmon only. psutil.sensors_temperatures()
+        reads every hwmon device, 1-wire probes included (w1_slave_temp): about 4 s
+        per probe, 19 s with 5 probes on a Raspberry Pi.
+        """
+        for hwmon in glob.glob("/sys/class/hwmon/hwmon*"):
+            try:
+                with open(os.path.join(hwmon, "name")) as f:
+                    if f.read().strip() != "cpu_thermal":
+                        continue
+                with open(os.path.join(hwmon, "temp1_input")) as f:
+                    celsius = int(f.read().strip()) / 1000
+            except (OSError, ValueError):
+                continue
+            return round(celsius * 9 / 5 + 32 if fahrenheit else celsius, 1)
+        return 0
+
+    @staticmethod
+    def _wlan0_rate():
+        """wlan0 bit rate from iwlist, bounded in time: a stuck iwlist would hold a worker thread."""
+        try:
+            output = subprocess.run(
+                ["iwlist", "wlan0", "rate"],
+                capture_output=True,
+                text=True,
+                timeout=2,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            return "N/A"
+        for line in output.splitlines():
+            if "Rate" in line and "=" in line and " Mb/s" in line:
+                return line[line.find("=") + 1 : line.find(" Mb/s")]
+        return "N/A"
+
+    def _systeminfo(self, TEMP_UNIT):
         system = ""
         temp = 0
         cpuload = 0
@@ -310,7 +354,6 @@ class SystemController:
         eth0speed = "N/A"
         wlan0speed = "N/A"
 
-        TEMP_UNIT = self.cbpi.config.get("TEMP_UNIT", "C")
         FAHRENHEIT = False if TEMP_UNIT == "C" else True
 
         af_map = {
@@ -333,14 +376,7 @@ class SystemController:
             mempercent = round(float(mem.percent), 1)
             totalmem = round((int(mem.total) / (1024 * 1024)), 1)
             if system == "Linux":
-                try:
-                    temps = psutil.sensors_temperatures(fahrenheit=FAHRENHEIT)
-                    for name, entries in temps.items():
-                        for entry in entries:
-                            if name == "cpu_thermal":
-                                temp = round(float(entry.current), 1)
-                except:
-                    pass
+                temp = self._cpu_temperature(FAHRENHEIT)
             else:
                 temp = "N/A"
             if system == "Linux":
@@ -374,12 +410,7 @@ class SystemController:
                                     eth0speed = "down"
                             if nic == "wlan0":
                                 if info[nic].isup == True:
-                                    ratestring = os.popen(
-                                        "iwlist wlan0 rate | grep Rate"
-                                    ).read()
-                                    start = ratestring.find("=") + 1
-                                    end = ratestring.find(" Mb/s")
-                                    wlan0speed = ratestring[start:end]
+                                    wlan0speed = self._wlan0_rate()
                                 else:
                                     wlan0speed = "down"
                     except Exception as e:

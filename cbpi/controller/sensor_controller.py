@@ -26,6 +26,11 @@ class SensorController(BasicController):
             props=data.get("props", []),
         )
 
+    async def delete(self, id) -> None:
+        await super().delete(id)
+        # no stale value of the deleted sensor in the GUI snapshot
+        self.cbpi.ws.events.forget("sensorstate", id)
+
     def get_sensor_value(self, id):
         if id is None:
             return None

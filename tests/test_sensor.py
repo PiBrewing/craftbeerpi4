@@ -32,5 +32,8 @@ class SensorTestCase(CraftBeerPiTestCase):
         assert resp.status == 200
 
         # # Delete Sensor
+        self.cbpi.ws.send(dict(topic="sensorstate", id=sensor_id, value=1))
         resp = await self.client.delete(path="/sensor/%s" % sensor_id)
         assert resp.status == 200
+        # its last value leaves the GUI snapshot
+        assert all(sensor_id not in e for e in self.cbpi.ws.events.snapshot())
