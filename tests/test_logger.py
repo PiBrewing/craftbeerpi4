@@ -1,7 +1,8 @@
 import asyncio
 import glob
+import time
+from unittest import mock
 
-from aiohttp.test_utils import unittest_run_loop
 from tests.cbpi_config_fixture import CraftBeerPiTestCase
 import os
 
@@ -9,17 +10,21 @@ class LoggerTestCase(CraftBeerPiTestCase):
 
     async def test_log_data(self):
 
-        os.makedirs(os.path.join(".", "tests", "logs"), exist_ok=True)
         log_name = "unconfigured_test_sensor_ID"
         #clear all logs
         self.cbpi.log.clear_log(log_name)
         assert len(glob.glob(os.path.join(self.cbpi.log.logsFolderPath, f"sensor_{log_name}.log*"))) == 0
 
-        # write log entries
+        # write log entries, one second apart on a fake clock instead of
+        # waiting a real second between them
+        start = time.time()
         for i in range(5):
-            print(log_name)
-            self.cbpi.log.log_data(log_name, 222)
-            await asyncio.sleep(1)
+            with mock.patch("cbpi.controller.log_file_controller.localtime",
+                            return_value=time.localtime(start + i)):
+                self.cbpi.log.log_data(log_name, 222)
+            # let the listener tasks write the entry
+            for _ in range(3):
+                await asyncio.sleep(0)
 
         # read log data
         data = await self.cbpi.log.get_data(log_name, sample_rate='1s')
@@ -30,6 +35,3 @@ class LoggerTestCase(CraftBeerPiTestCase):
         self.cbpi.log.clear_zip(log_name)
 
         self.cbpi.log.clear_log(log_name)
-
-
-

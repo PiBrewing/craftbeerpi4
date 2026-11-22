@@ -1,11 +1,10 @@
 # content of conftest.py
-from codecs import ignore_errors
-from distutils.command.config import config
 import os
+import shutil
+import tempfile
 from cbpi.configFolder import ConfigFolder
 from cbpi.craftbeerpi import CraftBeerPi
 from aiohttp.test_utils import AioHTTPTestCase
-from distutils.dir_util import copy_tree
 
 
 class CraftBeerPiTestCase(AioHTTPTestCase):
@@ -17,8 +16,15 @@ class CraftBeerPiTestCase(AioHTTPTestCase):
         return self.cbpi.app
 
     def configuration(self):
+        # Each test runs on its own copy of the test config, so a test never
+        # sees what an earlier one wrote and the run leaves the repository
+        # untouched (cbpi rewrites config.json with its version at startup).
         test_directory = os.path.dirname(__file__)
-        test_config_directory = os.path.join(test_directory, 'cbpi-test-config')
-        test_logs_directory = os.path.join(test_directory, 'logs')
+        self.temp_directory = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.temp_directory, ignore_errors=True)
+        test_config_directory = os.path.join(self.temp_directory, 'config')
+        shutil.copytree(os.path.join(test_directory, 'cbpi-test-config'), test_config_directory)
+        test_logs_directory = os.path.join(self.temp_directory, 'logs')
+        os.mkdir(test_logs_directory)
         configFolder = ConfigFolder(test_config_directory, test_logs_directory)
         return configFolder

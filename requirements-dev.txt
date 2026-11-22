@@ -1,0 +1,6 @@
+-r requirements.txt
+# The UI is a dependency of setup.py; the docker image installs it from the
+# craftbeerpi4-ui archive instead, the tests need it for the index page.
+cbpi4gui
+pytest-aiohttp
+coverage==7.16.0

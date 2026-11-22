@@ -53,7 +53,7 @@ setup(name='cbpi4',
       '': ['*.txt', '*.rst', '*.yaml'],
       'cbpi': ['*','*.txt', '*.rst', '*.yaml']},
 
-      python_requires='>=3.9',
+      python_requires='>=3.11',
       long_description=long_description,
 	    long_description_content_type='text/markdown',
       install_requires=[
@@ -81,7 +81,8 @@ setup(name='cbpi4',
           'cbpi4gui',
           'importlib_metadata',
           'distro>=1.8.0',
-          'numpy==2.5.3',
+          'numpy==2.5.3; python_version >= "3.12"',
+          'numpy==2.4.4; python_version < "3.12"',
           'pandas==3.0.5'] + board_reqs + (
           ['systemd-python'] if localsystem == "Linux" else [] ),
 
