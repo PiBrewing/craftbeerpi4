@@ -36,6 +36,13 @@ class SatelliteController:
             ("cbpi/updatefermenter", self._fermenterupdate),
         ]
         self.tasks = set()
+        self.connected = False
+        # Latest retained message per topic that could not be delivered. Actor
+        # states are retained: an "off" published while the broker was away was
+        # dropped, cbpi showed the actor off and the relay stayed on. They are
+        # re-sent as soon as the connection is back.
+        self.pending = {}
+        self.publish_seq = {}
 
     def remove_key(self, d, key):
         r = dict(d)
@@ -67,6 +74,8 @@ class SatelliteController:
             try:
                 async with self.client as client:
                     await client.subscribe("#")
+                    self.connected = True
+                    await self._flush_pending()
                     async for message in client.messages:
                         for topic_filter in self.topic_filters:
                             topic = topic_filter[0]
@@ -81,15 +90,36 @@ class SatelliteController:
                 self.logger.warning("MQTT disconnected: {}. Reconnecting in 5s".format(e))
             except Exception as e:
                 self.logger.error("MQTT General Exception: {}. Reconnecting in 5s".format(e))
+            finally:
+                self.connected = False
 
             await asyncio.sleep(5)
 
+    async def _flush_pending(self):
+        for topic, message in list(self.pending.items()):
+            if self.pending.get(topic) is not message:
+                continue  # superseded while re-sending the previous ones
+            self.logger.info("Re-sending retained MQTT message on {}".format(topic))
+            await self.publish(topic, message, retain=True)
+
     async def publish(self, topic, message, retain=False):
-        if self.client is not None and self.client._connected:
-            try:
-                await self.client.publish(topic, message, qos=1, retain=retain)
-            except aiomqtt.MqttError as e:
-                self.logger.warning("Failed to push data via mqtt: {}".format(e))
+        if retain:
+            # only the latest message of a topic may end up pending, so an older
+            # state can never be re-sent over a newer one
+            seq = self.publish_seq.get(topic, 0) + 1
+            self.publish_seq[topic] = seq
+        if self.client is None or not self.connected:
+            if retain:
+                self.pending[topic] = message
+            return
+        try:
+            await self.client.publish(topic, message, qos=1, retain=retain)
+            if retain and self.publish_seq[topic] == seq:
+                self.pending.pop(topic, None)
+        except aiomqtt.MqttError as e:
+            self.logger.warning("Failed to push data via mqtt: {}".format(e))
+            if retain and self.publish_seq[topic] == seq:
+                self.pending[topic] = message
 
     async def _actor_on(self, message):
         try:

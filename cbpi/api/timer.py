@@ -14,8 +14,14 @@ class Timer(object):
         self._update = on_update
         self.start_time = None
         self.end_time = None
+        self._stopped = False
 
     def done(self, task):
+        # stop() cancels the job and _job() swallows the cancellation, so the
+        # task ends normally: only a timer that really ran out may call on_done,
+        # otherwise pausing a step would move on to the next one.
+        if self._stopped:
+            return
         if self._callback is not None:
             asyncio.create_task(self._callback(self))
 
@@ -38,11 +44,13 @@ class Timer(object):
         self.end_time = self.end_time + seconds
 
     def start(self):
+        self._stopped = False
         self._task = asyncio.create_task(self._job())
         self._task.add_done_callback(self.done)
 
     async def stop(self):
         if self._task and self._task.done() is False:
+            self._stopped = True
             self._task.cancel()
             await self._task
 
