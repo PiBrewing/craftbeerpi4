@@ -11,7 +11,7 @@ __all__ = [
     "parameters",
 ]
 
-from aiohttp_auth import auth
+from cbpi import auth
 
 
 def composed(*decs):
