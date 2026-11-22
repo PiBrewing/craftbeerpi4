@@ -15,6 +15,7 @@ import shortuuid
 import yaml
 from cbpi.api.dataclasses import Fermenter, FermenterStep, Props, Step
 from cbpi.controller.basic_controller2 import BasicController
+from cbpi.utils.utils import set_aside_corrupt_file, write_json_atomic
 from tabulate import tabulate
 
 from ..api.step import (CBPiFermentationStep, CBPiStep, StepMove, StepResult,
@@ -45,9 +46,7 @@ class FermentationController:
             is False
         ):
             logging.warning("Missing fermenter_data.json file. INIT empty file")
-            data = {"data": []}
-            destfile = self.cbpi.config_folder.get_file_path("fermenter_data.json")
-            json.dump(data, open(destfile, "w"), indent=4, sort_keys=True)
+            write_json_atomic(self.path, {"data": []})
 
         pathlib.Path(self.cbpi.config_folder.get_file_path("fermenterrecipes")).mkdir(
             parents=True, exist_ok=True
@@ -77,20 +76,17 @@ class FermentationController:
                     self.logger.error(e)
 
     async def load(self):
+        # a file that cannot be loaded is set aside instead of deleted,
+        # and cbpi starts with empty data
         try:
             with open(self.path) as json_file:
                 data = json.load(json_file)
-
-                for i in data["data"]:
-                    self.data.append(self._create(i))
-        except:
-            logging.warning("Invalid fermenter_data.json file - Creating empty file")
-            os.remove(self.path)
-            data = {"data": []}
-            destfile = self.cbpi.config_folder.get_file_path("fermenter_data.json")
-            json.dump(data, open(destfile, "w"), indent=4, sort_keys=True)
-            for i in data["data"]:
-                self.data.append(self._create(i))
+            items = list(map(lambda i: self._create(i), data["data"]))
+        except Exception as e:
+            if set_aside_corrupt_file(self.cbpi, self.path, e) is not None:
+                write_json_atomic(self.path, {"data": []})
+            items = []
+        self.data.extend(items)
 
     def _create_step(self, fermenter, item):
         id = item.get("id")
@@ -305,8 +301,7 @@ class FermentationController:
 
     def save(self):
         data = dict(data=list(map(lambda item: item.to_dict(), self.data)))
-        with open(self.path, "w") as file:
-            json.dump(data, file, indent=4, sort_keys=True)
+        write_json_atomic(self.path, data)
 
     def create_step(self, id, item):
         try:

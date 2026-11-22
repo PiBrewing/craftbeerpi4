@@ -7,6 +7,7 @@ import sys
 
 import shortuuid
 from cbpi.api.dataclasses import Actor, Fermenter, NotificationType, Props
+from cbpi.utils.utils import set_aside_corrupt_file, write_json_atomic
 from tabulate import tabulate
 
 
@@ -39,45 +40,35 @@ class BasicController:
         )
 
     async def load(self):
+        logging.info("{} Load ".format(self.name))
+        if os.path.exists(self.path) is False:
+            logging.warning("Missing {} file - Creating empty file".format(self.path))
+            write_json_atomic(self.path, dict(data=[]))
+
+        # read the file and build the items - a file that cannot be loaded
+        # is set aside instead of deleted, and cbpi starts with empty data
         try:
-            logging.info("{} Load ".format(self.name))
             with open(self.path) as json_file:
                 data = json.load(json_file)
-                data["data"].sort(key=lambda x: x.get("name").upper())
-
-                for i in data["data"]:
-                    self.data.append(self.create(i))
-
-                if self.autostart is True:
-                    for item in self.data:
-                        logging.info("{} Starting ".format(self.name))
-                        await self.start(item.id)
-                    await self.push_udpate()
+            data["data"].sort(key=lambda x: (x.get("name") or "").upper())
+            items = list(map(lambda i: self.create(i), data["data"]))
         except Exception as e:
-            # logging.error(e)
-            logging.warning("Invalid {} file - Creating empty file".format(self.path))
-            os.remove(self.path)
-            with open(self.path, "w") as file:
-                json.dump(dict(data=[]), file, indent=4, sort_keys=True)
+            if set_aside_corrupt_file(self.cbpi, self.path, e) is not None:
+                write_json_atomic(self.path, dict(data=[]))
+            items = []
 
-            with open(self.path) as json_file:
-                data = json.load(json_file)
-                data["data"].sort(key=lambda x: x.get("name").upper())
+        self.data.extend(items)
 
-                for i in data["data"]:
-                    self.data.append(self.create(i))
-
-                if self.autostart is True:
-                    for item in self.data:
-                        logging.info("{} Starting ".format(self.name))
-                        await self.start(item.id)
-                    await self.push_udpate()
+        if self.autostart is True:
+            for item in self.data:
+                logging.info("{} Starting ".format(self.name))
+                await self.start(item.id)
+            await self.push_udpate()
 
     async def save(self):
         logging.info("{} Save ".format(self.name))
         data = dict(data=list(map(lambda actor: actor.to_dict(), self.data)))
-        with open(self.path, "w") as file:
-            json.dump(data, file, indent=4, sort_keys=True)
+        write_json_atomic(self.path, data)
         await self.push_udpate()
 
     async def push_udpate(self):
