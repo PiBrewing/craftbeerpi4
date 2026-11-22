@@ -48,6 +48,7 @@ class CBPiEventBus(object):
             return (r.result, r.timeout)
 
     def register(self, topic, method, once=False):
+        self._learn_loop()
 
         if method in self.registry:
             raise RuntimeError(
@@ -102,18 +103,39 @@ class CBPiEventBus(object):
         self._root = self.Node()
         self.registry = {}
         self.docs = {}
-        if loop is not None:
-            self.loop = loop
-        else:
-            try:
-                self.loop = asyncio.get_running_loop()
-            except RuntimeError:
-                self.loop = asyncio.new_event_loop()
+        # loop is ignored, kept for compatibility. The bus is built before
+        # web.run_app starts its loop: a loop captured here was a new one
+        # that never ran, and the handlers fired on it never ran either.
+        # The loop of cbpi is learnt instead the first time the bus is used
+        # in it (plugins register at startup, inside the loop), so that
+        # sync_fire() can hand events over from another thread.
+        self._loop = None
 
-        #asyncio.set_event_loop(self.loop)
+    @property
+    def loop(self):
+        self._loop = asyncio.get_running_loop()
+        return self._loop
+
+    def _learn_loop(self):
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            pass
 
     def sync_fire(self, topic: str, timeout=1, **kwargs):
-        self.loop.create_task(self.fire(topic=topic, timeout=timeout, **kwargs))
+        coro = self.fire(topic=topic, timeout=timeout, **kwargs)
+        try:
+            self.loop.create_task(coro)
+        except RuntimeError:
+            # called from another thread: hand the event over to cbpi's loop
+            if self._loop is None or self._loop.is_closed():
+                coro.close()
+                self.logger.warning(
+                    "Event %s dropped: fired from a thread before cbpi's loop runs",
+                    topic,
+                )
+                return
+            asyncio.run_coroutine_threadsafe(coro, self._loop)
 
     async def fire(self, topic: str, timeout=0.5, **kwargs):
 
